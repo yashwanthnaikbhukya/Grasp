@@ -42,10 +42,22 @@ export const env = {
     db: get('MONGODB_DB', 'grasp'),
   },
 
+  /**
+   * `dev` collapses the `best` tier onto the mid model, so every call uses a
+   * small model and the free-tier quota goes several times further. Correct while
+   * there are no real learners and nothing is trusted yet.
+   *
+   * **Flip to `prod` before you trust a `slip.classify` label** — that one writes
+   * into the learner graph and persists, so it wants the real `best` model.
+   * See docs/04-llm-gateway.md#tiers.
+   */
+  modelProfile: (get('GRASP_MODEL_PROFILE', 'dev') === 'prod' ? 'prod' : 'dev') as 'dev' | 'prod',
+
   gemini: {
     apiKey: get('GEMINI_API_KEY'),
-    modelMid: get('GEMINI_MODEL_MID', 'gemini-2.0-flash'),
     modelFast: get('GEMINI_MODEL_FAST', 'gemini-2.0-flash-lite'),
+    modelMid: get('GEMINI_MODEL_MID', 'gemini-2.0-flash'),
+    modelBest: get('GEMINI_MODEL_BEST', 'gemini-2.5-flash'),
   },
 
   groq: {

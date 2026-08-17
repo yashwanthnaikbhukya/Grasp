@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "setup:check": "tsx scripts/setup-check.ts",
+    "models:check": "tsx scripts/models-check.ts",
     "db:indexes": "tsx scripts/db-indexes.ts",
     "db:seed:concepts": "tsx scripts/seed-concepts.ts",
     "db:seed:curricula": "tsx scripts/seed-curricula.ts",

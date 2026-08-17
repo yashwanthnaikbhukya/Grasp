@@ -87,6 +87,17 @@ async function collect(): Promise<Check[]> {
     }
   }
 
+  checks.push({
+    phase: 0,
+    name: 'Model profile',
+    state: 'ok',
+    detail:
+      env.modelProfile === 'dev'
+        ? 'dev — small models everywhere, best tier collapsed'
+        : 'prod — full tier separation',
+    fix: 'GRASP_MODEL_PROFILE=dev|prod',
+  });
+
   const providers = configuredProviders();
   if (providers.length === 0) {
     checks.push({
@@ -116,9 +127,11 @@ async function collect(): Promise<Check[]> {
   const ollama = await ollamaStatus();
   if (!ollama.reachable) {
     checks.push({
-      phase: 0,
+      // Embeddings are a Phase 1 need (ingestion). The Phase 0 gate is the
+      // gateway, which does not touch them — so this must not block today.
+      phase: 1,
       name: 'Ollama (embeddings)',
-      state: 'missing',
+      state: 'warn',
       detail: ollama.error ?? `unreachable at ${env.ollama.baseUrl}`,
       fix: 'brew install ollama && brew services start ollama — docs/08-setup.md § 1',
     });
@@ -126,9 +139,9 @@ async function collect(): Promise<Check[]> {
     const hasEmbed = ollama.models.some((m) => m.startsWith(env.ollama.embedModel));
     const hasChat = ollama.models.some((m) => m.startsWith(env.ollama.chatModel));
     checks.push({
-      phase: 0,
+      phase: 1,
       name: 'Ollama (embeddings)',
-      state: hasEmbed ? 'ok' : 'missing',
+      state: hasEmbed ? 'ok' : 'warn',
       detail: hasEmbed
         ? `${env.ollama.embedModel} present · ${env.ollama.embedDim} dims`
         : `running, but ${env.ollama.embedModel} not pulled`,
@@ -136,7 +149,7 @@ async function collect(): Promise<Check[]> {
     });
     if (!hasChat) {
       checks.push({
-        phase: 0,
+        phase: 1,
         name: 'Ollama (offline failover)',
         state: 'warn',
         detail: `${env.ollama.chatModel} not pulled — no offline floor`,

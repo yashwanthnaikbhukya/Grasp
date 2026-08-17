@@ -4,8 +4,9 @@ Everything here has a real free tier. Nothing needs a credit card except
 Cloudflare R2 (which asks for one but does not charge inside the free tier), and
 that isn't needed until Phase 1.
 
-**Do steps 1–7 now.** Step 8 onward is Phase 1+ and `pnpm setup:check` will nag
-you when the time comes.
+**Only two things block the Phase 0 gate: a Mongo connection string and one
+model key.** Everything else, Ollama included, is Phase 1 — `pnpm setup:check`
+nags you when each becomes relevant.
 
 > Provider dashboards get redesigned. If a menu path below doesn't match what you
 > see, the *thing you're looking for* is still named the same — search for it.
@@ -39,10 +40,14 @@ Keep `.env.local` open — you'll be pasting into it for the next twenty minutes
 
 ---
 
-## 1 — Ollama (local embeddings) · required
+## 1 — Ollama (local embeddings) · needed for Phase 1
 
 This is what makes the project genuinely free: embeddings and reranking run on
 your Mac, unmetered, and no learner text ever leaves the machine.
+
+Not needed for the Phase 0 gate — that exercises the gateway, which never touches
+embeddings. Worth doing now anyway; it's a two-minute install and Phase 1
+ingestion is blocked without it.
 
 ```bash
 brew install ollama
@@ -118,6 +123,11 @@ pnpm setup:check
 
 **Cost: free tier, no card.**
 
+While you're in dev, leave `GRASP_MODEL_PROFILE=dev`. It collapses the `best`
+tier onto the mid model, so every call uses a small model and the free-tier quota
+goes several times further. Flip it to `prod` before you start trusting a
+`slip.classify` label — that task writes into the learner graph and persists.
+
 1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
 2. **Create API key** → pick or create a Google Cloud project.
 3. Copy it.
@@ -132,14 +142,25 @@ GEMINI_API_KEY=AIza...
 > key.** Use synthetic learners during the POC. This is the single most important
 > line in this document.
 
-Model names in `.env.example` are current-as-of-writing defaults. If a call 404s
-with "model not found", check
-[ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models)
-and update `GEMINI_MODEL_MID` / `GEMINI_MODEL_FAST`.
+Model ids in `.env.example` are current-as-of-writing defaults, and providers
+retire and rename them without much warning. Don't guess:
+
+```bash
+pnpm models:check
+```
+
+That asks each provider what **your key** can actually use, verifies every id in
+`.env.local` exists, and lists the smallest available models first — which is what
+you want in dev. Run it whenever a call 404s with "model not found".
 
 ---
 
 ## 4 — Groq API key · strongly recommended
+
+> **Groq, not Grok.** `console.groq.com`, keys start with `gsk_`. xAI's Grok
+> (`x.ai`, `xai-...`) is a different service and is not free. Groq is
+> OpenAI-compatible, which is why one adapter covers it and OpenRouter both.
+
 
 **Cost: free tier, no card.** Very fast inference on open models — this is what
 makes `fast`-tier tasks (query rewriting on every message, bulk card generation)
@@ -264,11 +285,12 @@ fails a request because tracing failed.
 ## 7 — Verify Phase 0 · required
 
 ```bash
-pnpm setup:check
+pnpm setup:check     # what's wired, what isn't, and the fix for each
+pnpm models:check    # do the configured model ids actually exist on your key
 ```
 
-Expected: Mongo ✓, Ollama ✓ with the embed model present, at least one hosted
-provider ✓.
+Expected for Phase 0: Mongo ✓ and at least one provider ✓. Ollama shows under
+Phase 1 and does not block.
 
 Load the curricula and the concept graph:
 

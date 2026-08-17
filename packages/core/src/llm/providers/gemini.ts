@@ -58,7 +58,13 @@ export const geminiAdapter: ProviderAdapter = {
   },
 
   modelFor(tier: ModelTier) {
-    return tier === 'fast' ? env.gemini.modelFast : env.gemini.modelMid;
+    // In the dev profile `best` collapses onto the mid model — small models
+    // everywhere, quota goes further. See env.modelProfile.
+    if (env.modelProfile === 'dev') {
+      return tier === 'fast' ? env.gemini.modelFast : env.gemini.modelMid;
+    }
+    if (tier === 'fast') return env.gemini.modelFast;
+    return tier === 'mid' ? env.gemini.modelMid : env.gemini.modelBest;
   },
 
   async chat(req: ChatRequest): Promise<ChatResponse> {
