@@ -90,6 +90,11 @@ export type Slip = z.infer<typeof SlipSchema>;
 
 export const UserSchema = z.object({
   _id: ObjectIdString.optional(),
+  /**
+   * Better Auth owns the credential record; this is Grasp's learner record.
+   * Two collections so an auth-library upgrade can never migrate learner data.
+   */
+  authId: z.string().min(1),
   email: z.string().email(),
   /**
    * Display name only. **Never enters a prompt** — the learner card addresses the

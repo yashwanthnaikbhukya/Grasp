@@ -13,7 +13,10 @@ import { db } from './client';
  */
 
 export const REGULAR_INDEXES: Partial<Record<CollectionName, IndexDescription[]>> = {
-  [COLLECTIONS.users]: [{ key: { email: 1 }, unique: true, name: 'email_unique' }],
+  [COLLECTIONS.users]: [
+    { key: { email: 1 }, unique: true, name: 'email_unique' },
+    { key: { authId: 1 }, unique: true, name: 'auth_id_unique' },
+  ],
 
   // The universal concept graph — no board, no grade. See ADR 0006.
   [COLLECTIONS.concepts]: [
@@ -83,6 +86,8 @@ export const REGULAR_INDEXES: Partial<Record<CollectionName, IndexDescription[]>
 
   [COLLECTIONS.messages]: [
     { key: { sessionId: 1, createdAt: 1 }, name: 'session_order' },
+    // Every learner-facing message read filters on userId first — see auth/scope.ts.
+    { key: { userId: 1, createdAt: -1 }, name: 'user_messages' },
     // Walking the message tree. See docs/adr/0004-messages-are-a-tree.md.
     { key: { parentMessageId: 1 }, name: 'tree' },
   ],

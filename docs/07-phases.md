@@ -103,22 +103,44 @@ Verify with: `pnpm setup:check` then the `/debug/gateway` page.
 
 *Weeks 3–6. Goal: a tutor that is visibly not ChatGPT.*
 
-### 1.0 Onboarding ☐
+### 1.0 Onboarding ◐
 
 Built **before** chat, because the learner card is empty until it exists. Full
 spec: [10-onboarding.md](10-onboarding.md).
 
-- ☐ Five screens, under 90 seconds, progressive and skippable
-- ☐ Country geo-guess, editable → locale, units, notation, curriculum candidates
-- ☐ Age (asked plainly, never inferred) + stage picker with **local labels**
-- ☐ Curriculum multi-select, with "Other / self-study" always working
-- ☐ Goal + minutes/day *(deferrable to first session)*
-- ☐ Language + code-switching + depth *(deferrable)*
-- ☐ `profileCompleteness` nudge — never a blocking modal
-- ☐ **Consent gating by age and region** — under threshold ⇒ guardian flow, and
-      nothing beyond account creation processed until consent is recorded
-- ☐ Learner-card snapshot tests across the profile matrix: full, minimal,
-      self-study adult, code-switching
+- ☑ Four screens, progressive, each saving as it goes
+- ☑ Region picker (25 regions) → curriculum candidates, notation, locale
+- ☑ Age asked plainly, never inferred + stage picker with **local labels**
+- ☑ Curriculum multi-select filtered by region and stage; self-study always works
+- ☑ Goal + exam date + minutes/day
+- ☑ Instruction language + code-switching pair
+- ☐ Country geo-guess from request headers (currently a plain picker)
+- ☐ `profileCompleteness` nudge in the UI (the function exists and is tested)
+- ☐ **Consent gating by age and region** — under threshold ⇒ guardian flow.
+      Required before any real learner; not needed on synthetic data
+- ☐ Learner-card snapshot tests across the profile matrix
+
+### 1.6 Auth ☑
+
+- ☑ Better Auth + Mongo adapter, email + password, 30-day rotating sessions
+- ☑ Better Auth owns credentials; Grasp's `users` holds the learner record,
+      linked by `authId` — an auth-library upgrade can never migrate learner data
+- ☑ `requireUser()` / `requireOnboarded()` hand back a **pre-scoped** `UserScope`,
+      so the natural thing to reach for is already user-filtered
+- ☑ **`UserScope` / `ScopedCollection`** — owner filter injected into every read,
+      owner stamped on every write, `$setOnInsert` on upsert so a miss cannot
+      create an unowned document. A mismatched owner **throws** rather than being
+      silently rewritten, because a silent override hides the bug
+- ☑ 19 cross-user isolation tests (security tests — blocking them is not negotiable)
+- ☑ `userId` denormalized onto `messages` so scoping is a direct filter, never a
+      join through `chatSessions` that someone could write wrong
+- ☐ Magic-link sign-in (needs Resend)
+- ☐ Email verification (blocked on the same)
+
+Verified live against Atlas: sign-up → session → empty profile → onboarding save
+→ signed-in render. Anonymous `/api/profile` returns 401; anonymous `/app`
+redirects to `/login?next=/app`. A learner stored as `stage: 10` with
+`region: NG` renders as **"SSS 1"**.
 
 ### 1.1 Ingestion ☐
 

@@ -17,6 +17,7 @@
   "dependencies": {
     "@grasp/prompts": "workspace:*",
     "@grasp/schema": "workspace:*",
+    "better-auth": "^1.6.30",
     "mongodb": "^6.12.0",
     "zod": "^3.24.1",
     "zod-to-json-schema": "^3.24.1"

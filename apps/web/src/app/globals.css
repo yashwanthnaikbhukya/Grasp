@@ -165,3 +165,81 @@ td:first-child { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---------- forms ---------- */
+
+.input, .select {
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  padding: 10px var(--s3);
+  width: 100%;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+.input:focus, .select:focus {
+  outline: none;
+  border-color: var(--cobalt);
+  box-shadow: 0 0 0 3px var(--cobalt-soft);
+}
+.input::placeholder { color: var(--ink-4); }
+
+.btn {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--paper-raised);
+  background: var(--cobalt);
+  border: 1px solid var(--cobalt);
+  border-radius: 4px;
+  padding: 10px var(--s5);
+  cursor: pointer;
+  transition: opacity 0.14s ease;
+}
+.btn:hover:not(:disabled) { opacity: 0.88; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn-ghost {
+  color: var(--ink-2);
+  background: transparent;
+  border-color: var(--rule-strong);
+}
+
+.linkbtn {
+  font: inherit;
+  color: var(--cobalt);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Chip-style multi-select — reads faster than a listbox for short option sets. */
+.chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.chip {
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  padding: 6px var(--s4);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+.chip:hover { border-color: var(--cobalt); }
+.chip[aria-pressed='true'] {
+  color: var(--cobalt);
+  background: var(--cobalt-soft);
+  border-color: var(--cobalt);
+  font-weight: 600;
+}
+
+.steps { display: flex; gap: 4px; margin-bottom: var(--s5); }
+.steps i {
+  height: 3px; flex: 1; border-radius: 2px; background: var(--rule);
+}
+.steps i.on { background: var(--cobalt); }

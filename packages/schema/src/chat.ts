@@ -13,6 +13,14 @@ export type MessagePart = z.infer<typeof MessagePart>;
 export const MessageSchema = z.object({
   _id: ObjectIdString.optional(),
   sessionId: ObjectIdString,
+  /**
+   * Denormalized from the session so user-scoping is a direct filter.
+   *
+   * Joining through `chatSessions` would make every message read depend on a
+   * second query being written correctly — exactly the kind of care that lapses.
+   * See packages/core/src/auth/scope.ts.
+   */
+  userId: ObjectIdString,
   role: z.enum(['user', 'assistant', 'system']),
 
   /**

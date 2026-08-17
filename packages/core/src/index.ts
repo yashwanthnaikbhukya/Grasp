@@ -15,3 +15,4 @@ export * from './db/index';
 export * from './llm/index';
 export * from './events/index';
 export * from './concepts/index';
+export * from './auth/index';
