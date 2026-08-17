@@ -1,3 +1,5 @@
+export { generateStream } from './stream';
+export type { StreamArgs, StreamChunk } from './stream';
 export { generate, embed, chainFor } from './gateway';
 export type { GenerateArgs, GenerateResult } from './gateway';
 export { TASKS, taskConfig, listTasks } from './registry';

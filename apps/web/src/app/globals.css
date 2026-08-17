@@ -243,3 +243,96 @@ td:first-child { color: var(--ink); }
   height: 3px; flex: 1; border-radius: 2px; background: var(--rule);
 }
 .steps i.on { background: var(--cobalt); }
+
+/* ---------- Ask ---------- */
+
+.ask { display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
+@media (max-width: 800px) { .ask { grid-template-columns: 1fr; } .ask-side { display: none; } }
+
+.ask-side {
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--rule);
+  background: var(--paper-sunk);
+  overflow: hidden;
+}
+.ask-side-head { padding: var(--s4); display: grid; gap: var(--s3); border-bottom: 1px solid var(--rule); }
+.ask-brand {
+  font-family: var(--font-display); font-weight: 700; letter-spacing: 0.14em;
+  text-decoration: none; color: var(--ink); font-size: 1.1rem;
+}
+.ask-brand span { color: var(--cobalt); }
+
+.ask-convos { flex: 1; overflow-y: auto; padding: var(--s3) var(--s2); display: grid; gap: 2px; align-content: start; }
+.ask-convo {
+  font: inherit; font-size: 0.875rem; text-align: left;
+  color: var(--ink-2); background: none; border: none; border-radius: 4px;
+  padding: 8px var(--s3); cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ask-convo:hover { background: var(--paper-raised); }
+.ask-convo.on { background: var(--cobalt-soft); color: var(--cobalt); font-weight: 600; }
+
+.ask-side-foot { padding: var(--s4); border-top: 1px solid var(--rule); }
+
+.ask-main { display: flex; flex-direction: column; overflow: hidden; }
+
+.ask-empty {
+  flex: 1; display: flex; flex-direction: column; justify-content: center;
+  align-items: center; text-align: center; padding: var(--s6); max-width: 44rem; margin: 0 auto;
+}
+.ask-empty h1 { font-size: 1.75rem; margin: 0 0 var(--s2); }
+
+.ask-thread { flex: 1; overflow-y: auto; padding: var(--s6) var(--s5); }
+.ask-msg { max-width: 46rem; margin: 0 auto var(--s6); display: grid; gap: var(--s2); }
+.ask-role {
+  font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-4);
+}
+.ask-user .ask-body {
+  background: var(--paper-sunk); border: 1px solid var(--rule);
+  border-radius: 6px; padding: var(--s3) var(--s4);
+}
+.ask-body p { margin: 0 0 var(--s3); }
+.ask-body p:last-child { margin-bottom: 0; }
+.ask-body ul { margin: 0 0 var(--s3); padding-left: var(--s5); }
+.md-h { font-size: 1.05rem; margin: var(--s4) 0 var(--s2); }
+
+/* Maths reads as source rather than prose — legible, and honest about not
+   being typeset yet. */
+code.math {
+  background: var(--cobalt-soft); border-color: var(--cobalt-edge, var(--rule));
+  color: var(--cobalt); font-size: 0.9em; padding: 1px 6px;
+}
+sup.cite {
+  color: var(--cobalt); font-family: var(--font-mono); font-size: 0.65em;
+  background: var(--cobalt-soft); border-radius: 3px; padding: 1px 4px; margin-left: 2px;
+  cursor: help;
+}
+
+.ask-caret {
+  display: inline-block; width: 7px; height: 1.05em; vertical-align: text-bottom;
+  background: var(--cobalt); animation: blink 1s steps(2) infinite; margin-left: 2px;
+}
+@keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ask-caret { animation: none; } }
+
+.ask-sources { margin-top: var(--s3); font-size: 0.85rem; }
+.ask-detail {
+  margin-top: var(--s3); border-left: 2px solid var(--rule); padding-left: var(--s4);
+  display: grid; gap: var(--s3);
+}
+.ask-source { display: grid; grid-template-columns: auto 1fr; gap: var(--s3); align-items: start; }
+.ask-source p { margin: 2px 0 0; font-size: 0.8rem; }
+
+.ask-error {
+  max-width: 46rem; margin: 0 auto var(--s3); padding: var(--s3) var(--s4);
+  background: var(--bad-soft); color: var(--bad); border: 1px solid var(--bad);
+  border-radius: 4px; font-size: 0.9rem;
+}
+
+.ask-composer {
+  border-top: 1px solid var(--rule); padding: var(--s4) var(--s5);
+  display: flex; gap: var(--s3); align-items: flex-end;
+  max-width: 47rem; margin: 0 auto; width: 100%;
+}
+.ask-composer textarea { resize: none; max-height: 12rem; min-height: 2.75rem; }

@@ -160,23 +160,34 @@ redirects to `/login?next=/app`. A learner stored as `stage: 10` with
 - ☐ Profile-driven scope filter + **security test**: a user cannot retrieve
       another user's chunks; curriculum-neutral content stays eligible for everyone
 
-### 1.3 Context broker v1 ☐
+### 1.3 Context broker v1 ☑
 
-All six steps from [05-context-broker.md](05-context-broker.md). The budget
-allocator, history compaction, and RRF fusion are pure functions — unit-test them
-properly, they're where correctness lives.
+All six steps from [05-context-broker.md](05-context-broker.md). Budget allocator,
+learner card and RRF fusion are pure and unit-tested — that is where correctness
+lives.
 
-### 1.4 Chat ☐
+- ☑ `query.understand` — rewrite, concept tags, intent
+- ☑ Per-intent budget profiles, explicit allocation, shed reporting
+- ☑ History compaction (verbatim tail; digest wiring pending)
+- ☑ Hybrid retrieval with profile-driven scope filter
+- ☑ Learner card with mastery, prerequisite gaps, misconceptions, notation
+- ☑ Citation ids stamped; `verifyCitations` flags fabricated and ungrounded
 
-- ☐ SSE streaming from a route handler
-- ☐ Sessions: sidebar, auto-title after turn 2, rename, archive
-- ☐ Cross-session search (Atlas Search on `messages`)
-- ☐ Markdown + KaTeX + code blocks + copy
-- ☐ **Edit-and-branch** (the message tree — do not defer this)
-- ☐ Regenerate, stop generation
-- ☐ Citation chips that open the source page
-- ☐ Socratic toggle; default *probe once, then explain*
-- ☐ Token/cost readout in dev mode
+### 1.4 Chat ◐ — **usable end to end**
+
+- ☑ SSE streaming from a route handler, failover before first token only
+- ☑ Sessions: sidebar, auto-title, archive, reload
+- ☑ Markdown + maths + code blocks, streaming-safe renderer
+- ☑ Citation markers inline, expandable source panel with headings and excerpts
+- ☑ Stop generation
+- ☑ Socratic default — probe once, then explain
+- ☑ Per-turn diagnostics: intent, rewrite, concepts, sources, timings
+- ☑ `parentMessageId` written on every message (tree stored; branching UI pending)
+- ☐ Edit-and-branch UI
+- ☐ Regenerate
+- ☐ Cross-session search
+- ☐ Session digest for long conversations (verbatim tail only for now)
+- ☐ KaTeX typesetting (maths currently renders as styled source)
 
 ### 1.5 Attachments ☐
 
