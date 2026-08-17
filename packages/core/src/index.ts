@@ -19,3 +19,4 @@ export * from './auth/index';
 export * from './ingest/index';
 export * from './retrieval/index';
 export * from './context/index';
+export * from './learner/index';
