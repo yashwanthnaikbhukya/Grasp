@@ -1,0 +1,332 @@
+{
+  "_comment": [
+    "Curriculum overlays on the universal concept graph. See docs/adr/0006-curriculum-agnostic-concepts.md.",
+    "",
+    "This is data, not logic — adding a curriculum is adding a row. Only the curricula",
+    "you actually serve need concept mappings; an unmapped concept degrades to the",
+    "universal default rather than disappearing.",
+    "",
+    "regions: ['*'] means genuinely international (IB, Cambridge).",
+    "stageRange uses the normalized ladder in packages/schema/src/stage.ts —",
+    "stage 10 is Class 10 (IN) / Grade 10 (US) / Year 11 (GB) / MYP 5 (IB).",
+    "",
+    "notation only needs the fields that deviate from the schema defaults.",
+    "It is not cosmetic: 'trapezoid' denotes different shapes in US and UK English."
+  ],
+
+  "curricula": [
+    {
+      "_id": "self-study",
+      "name": "Self-study / not listed",
+      "authority": "None",
+      "regions": ["*"],
+      "subject": "mathematics",
+      "stageRange": { "min": 1, "max": 14 },
+      "language": "en",
+      "notation": {},
+      "exam": null,
+      "active": true
+    },
+
+    {
+      "_id": "in-cbse-secondary-math",
+      "name": "CBSE Mathematics (Secondary)",
+      "authority": "Central Board of Secondary Education, India",
+      "regions": ["IN"],
+      "subject": "mathematics",
+      "stageRange": { "min": 6, "max": 10 },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": { "name": "CBSE Class 10 Board", "typicalMonth": 2 },
+      "active": true
+    },
+    {
+      "_id": "in-cbse-senior-math",
+      "name": "CBSE Mathematics (Senior Secondary)",
+      "authority": "Central Board of Secondary Education, India",
+      "regions": ["IN"],
+      "subject": "mathematics",
+      "stageRange": { "min": 11, "max": 12 },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": { "name": "CBSE Class 12 Board", "typicalMonth": 3 },
+      "active": true
+    },
+    {
+      "_id": "in-icse-secondary-math",
+      "name": "ICSE Mathematics",
+      "authority": "Council for the Indian School Certificate Examinations",
+      "regions": ["IN"],
+      "subject": "mathematics",
+      "stageRange": { "min": 6, "max": 10 },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": { "name": "ICSE Class 10", "typicalMonth": 2 },
+      "active": true
+    },
+    {
+      "_id": "in-jee-math",
+      "name": "JEE Mathematics",
+      "authority": "National Testing Agency, India",
+      "regions": ["IN"],
+      "subject": "mathematics",
+      "stageRange": { "min": 11, "max": 12 },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": { "name": "JEE Main", "typicalMonth": 1 },
+      "active": true
+    },
+    {
+      "_id": "pk-matric-math",
+      "name": "Matriculation Mathematics",
+      "authority": "Provincial Boards, Pakistan",
+      "regions": ["PK"],
+      "subject": "mathematics",
+      "stageRange": { "min": 9, "max": 10 },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": { "name": "Matric Part II", "typicalMonth": 3 },
+      "active": true
+    },
+
+    {
+      "_id": "us-common-core-math",
+      "name": "Common Core Mathematics",
+      "authority": "Common Core State Standards Initiative, USA",
+      "regions": ["US"],
+      "subject": "mathematics",
+      "stageRange": { "min": 6, "max": 12 },
+      "language": "en",
+      "notation": { "units": "mixed" },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "us-ap-precalculus",
+      "name": "AP Precalculus",
+      "authority": "College Board, USA",
+      "regions": ["US"],
+      "subject": "mathematics",
+      "stageRange": { "min": 10, "max": 12 },
+      "language": "en",
+      "notation": { "units": "mixed" },
+      "exam": { "name": "AP Precalculus Exam", "typicalMonth": 5 },
+      "active": true
+    },
+
+    {
+      "_id": "gb-gcse-maths",
+      "name": "GCSE Mathematics",
+      "authority": "Ofqual-regulated boards, UK",
+      "regions": ["GB"],
+      "subject": "mathematics",
+      "stageRange": { "min": 8, "max": 10 },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": { "name": "GCSE Maths", "typicalMonth": 5 },
+      "active": true
+    },
+    {
+      "_id": "gb-a-level-maths",
+      "name": "A-Level Mathematics",
+      "authority": "Ofqual-regulated boards, UK",
+      "regions": ["GB"],
+      "subject": "mathematics",
+      "stageRange": { "min": 11, "max": 12 },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": { "name": "A-Level Maths", "typicalMonth": 6 },
+      "active": true
+    },
+
+    {
+      "_id": "ib-myp-math",
+      "name": "IB MYP Mathematics",
+      "authority": "International Baccalaureate Organization",
+      "regions": ["*"],
+      "subject": "mathematics",
+      "stageRange": { "min": 6, "max": 10 },
+      "language": "en",
+      "notation": { "spelling": "en-GB" },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "ib-dp-math-aa",
+      "name": "IB DP Mathematics: Analysis & Approaches",
+      "authority": "International Baccalaureate Organization",
+      "regions": ["*"],
+      "subject": "mathematics",
+      "stageRange": { "min": 11, "max": 12 },
+      "language": "en",
+      "notation": { "spelling": "en-GB" },
+      "exam": { "name": "IB DP Mathematics AA", "typicalMonth": 5 },
+      "active": true
+    },
+    {
+      "_id": "cambridge-igcse-math",
+      "name": "Cambridge IGCSE Mathematics",
+      "authority": "Cambridge Assessment International Education",
+      "regions": ["*"],
+      "subject": "mathematics",
+      "stageRange": { "min": 8, "max": 10 },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": { "name": "Cambridge IGCSE Mathematics", "typicalMonth": 5 },
+      "active": true
+    },
+
+    {
+      "_id": "ng-waec-math",
+      "name": "WAEC Mathematics",
+      "authority": "West African Examinations Council",
+      "regions": ["NG", "GH"],
+      "subject": "mathematics",
+      "stageRange": { "min": 10, "max": 12 },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": { "name": "WASSCE Mathematics", "typicalMonth": 5 },
+      "active": true
+    },
+    {
+      "_id": "ke-cbc-math",
+      "name": "CBC Mathematics",
+      "authority": "Kenya Institute of Curriculum Development",
+      "regions": ["KE"],
+      "subject": "mathematics",
+      "stageRange": { "min": 6, "max": 12 },
+      "language": "en",
+      "notation": { "quadrilateral": "commonwealth", "spelling": "en-GB" },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "za-caps-math",
+      "name": "CAPS Mathematics",
+      "authority": "Department of Basic Education, South Africa",
+      "regions": ["ZA"],
+      "subject": "mathematics",
+      "stageRange": { "min": 8, "max": 12 },
+      "language": "en",
+      "notation": { "quadrilateral": "commonwealth", "spelling": "en-GB" },
+      "exam": { "name": "NSC Mathematics", "typicalMonth": 11 },
+      "active": true
+    },
+
+    {
+      "_id": "id-merdeka-math",
+      "name": "Matematika (Kurikulum Merdeka)",
+      "authority": "Kemendikbudristek, Indonesia",
+      "regions": ["ID"],
+      "subject": "mathematics",
+      "stageRange": { "min": 7, "max": 12 },
+      "language": "id",
+      "notation": { "decimalSeparator": ",", "quadrilateral": "commonwealth" },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "ph-k12-math",
+      "name": "K to 12 Mathematics",
+      "authority": "Department of Education, Philippines",
+      "regions": ["PH"],
+      "subject": "mathematics",
+      "stageRange": { "min": 7, "max": 12 },
+      "language": "en",
+      "notation": {},
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "vn-math",
+      "name": "Toán (Chương trình GDPT)",
+      "authority": "Bộ Giáo dục và Đào tạo, Vietnam",
+      "regions": ["VN"],
+      "subject": "mathematics",
+      "stageRange": { "min": 6, "max": 12 },
+      "language": "vi",
+      "notation": { "decimalSeparator": "," },
+      "exam": { "name": "Kỳ thi THPT", "typicalMonth": 6 },
+      "active": true
+    },
+    {
+      "_id": "br-bncc-math",
+      "name": "Matemática (BNCC)",
+      "authority": "Ministério da Educação, Brazil",
+      "regions": ["BR"],
+      "subject": "mathematics",
+      "stageRange": { "min": 6, "max": 12 },
+      "language": "pt",
+      "notation": { "decimalSeparator": ",", "quadrilateral": "commonwealth" },
+      "exam": { "name": "ENEM", "typicalMonth": 11 },
+      "active": true
+    },
+    {
+      "_id": "mx-sep-math",
+      "name": "Matemáticas (SEP)",
+      "authority": "Secretaría de Educación Pública, Mexico",
+      "regions": ["MX"],
+      "subject": "mathematics",
+      "stageRange": { "min": 7, "max": 12 },
+      "language": "es",
+      "notation": {},
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "eg-thanaweya-math",
+      "name": "الرياضيات (Thanaweya Amma)",
+      "authority": "Ministry of Education, Egypt",
+      "regions": ["EG"],
+      "subject": "mathematics",
+      "stageRange": { "min": 10, "max": 12 },
+      "language": "ar",
+      "notation": { "quadrilateral": "commonwealth" },
+      "exam": { "name": "Thanaweya Amma", "typicalMonth": 6 },
+      "active": true
+    }
+  ],
+
+  "mappings": []
+}

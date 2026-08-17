@@ -15,6 +15,7 @@ it is wrong — regardless of whether it works.
 | Prompt assembly / retrieval | [docs/05-context-broker.md](docs/05-context-broker.md) |
 | A collection or index | [docs/03-data-model.md](docs/03-data-model.md) |
 | Mastery, scheduling, events | [docs/06-learner-model.md](docs/06-learner-model.md) |
+| Anything curriculum / stage / locale shaped | [docs/10-onboarding.md](docs/10-onboarding.md) + [ADR 0006](docs/adr/0006-curriculum-agnostic-concepts.md) |
 | Deciding what to build next | [docs/07-phases.md](docs/07-phases.md) |
 | Code style, tests, evals | [docs/09-conventions.md](docs/09-conventions.md) |
 
@@ -44,6 +45,17 @@ Decisions that are settled (do not relitigate without an ADR):
    students ask about.
 8. **Both themes, always.** Tokens on `:root`; redefine tokens only inside the
    dark blocks. Never a color whose only definition sits behind a media query.
+9. **Scope belongs to the learner, never to the process.** Grasp is global. There
+   is no deployment-wide board/grade/subject. Region, stage, curriculum, and
+   language live on `users.profile`. `GRASP_SEED_*` names the first corpus to
+   *ingest* and must never gate what a learner can be.
+10. **Never name a field `grade`, and never store a local label in one.** "Class
+   10", "Grade 10", "Year 11" and "MYP 5" are one age band under four names — and
+   Year 11 is not Grade 11. Store the integer `stage`; render with
+   `stageLabel(stage, region)`.
+11. **Concepts are universal; curricula are overlays.** A concept never carries a
+   board. `stageRange` is advisory — it ranks and caveats, it never refuses. A
+   learner reaching ahead of their syllabus is the best signal they can send.
 
 ## Layout
 

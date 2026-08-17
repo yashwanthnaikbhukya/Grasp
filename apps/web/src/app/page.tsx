@@ -1,4 +1,5 @@
 import { env, flags } from '@grasp/core';
+import { stageLabel } from '@grasp/schema';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,9 @@ const SURFACES = [
   { key: 'duel', name: 'Duel', desc: 'Shared code, frozen question set', phase: 4 },
   { key: 'map', name: 'Map', desc: 'Concept graph with mastery heat', phase: 4 },
 ] as const;
+
+/** The same stage, as a learner in each place would recognise it. */
+const LADDER_DEMO = ['IN', 'US', 'GB', 'NG', 'BR', 'ID', 'SG'] as const;
 
 export default function Home() {
   return (
@@ -23,13 +27,38 @@ export default function Home() {
       </p>
 
       <div className="card" style={{ marginTop: 'var(--s7)' }}>
-        <p className="eyebrow">Content scope</p>
+        <p className="eyebrow">Scope belongs to the learner</p>
+        <p style={{ margin: '0 0 var(--s4)', color: 'var(--ink-2)' }}>
+          There is no deployment-wide curriculum. Region, stage, curriculum, and language are
+          discovered at onboarding and live on the learner — so students on different continents
+          work in the same instance.
+        </p>
+        <p className="eyebrow" style={{ marginBottom: 'var(--s2)' }}>
+          Stage 10, as each region names it
+        </p>
+        <p className="row" style={{ margin: 0, gap: 'var(--s2)' }}>
+          {LADDER_DEMO.map((r) => (
+            <span key={r} className="pill pill-info">
+              {r} · {stageLabel(10, r)}
+            </span>
+          ))}
+        </p>
+        <p className="muted" style={{ margin: 'var(--s4) 0 0', fontSize: '0.9rem' }}>
+          All the same age band, all the same normalized <code>stage</code>. Note{' '}
+          <strong>Year 11</strong> for the UK, not Year 10 — the off-by-one that makes any field
+          named <code>grade</code> a bug waiting for its second country.
+        </p>
+      </div>
+
+      <div className="card">
+        <p className="eyebrow">First corpus to ingest</p>
         <p className="mono" style={{ margin: 0, fontSize: '1.05rem' }}>
-          {env.scope.board} · Class {env.scope.grade} · {env.scope.subject}
+          {env.seed.curriculumId} · {env.seed.subject}
         </p>
         <p className="muted" style={{ margin: 'var(--s2) 0 0', fontSize: '0.9rem' }}>
-          Narrow by design — it&apos;s the mechanism that makes retrieval good enough to be
-          useful, not a limitation of the prototype.
+          An ingestion setting only — it has no effect on what a learner can be. Retrieval quality
+          is a function of corpus coherence, so the first corpus is narrow while the schema is
+          global.
         </p>
       </div>
 
@@ -69,8 +98,8 @@ export default function Home() {
         deliberately breaks the primary provider to prove failover actually works.
       </p>
       <p className="muted" style={{ fontSize: '0.9rem' }}>
-        Not yet configured? Run <code>pnpm setup:check</code>, then see{' '}
-        <code>docs/08-setup.md</code>.
+        Not yet configured? Run <code>pnpm setup:check</code>, then see <code>docs/08-setup.md</code>
+        .
       </p>
     </main>
   );

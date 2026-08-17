@@ -86,10 +86,25 @@ normalization, which is why it's the right fusion for a POC.
 Scope filter, always applied:
 
 ```
-ownerScope: 'global' AND board/grade/subject = learner's scope
-  OR ownerScope: 'user'    AND ownerId = userId
-  OR ownerScope: 'session' AND ownerId = sessionId
+ownerScope: 'global'  AND (curriculumIds ∩ profile.curriculumIds  OR  curriculumIds = [])
+                      AND subject ∈ profile.subjects
+  OR ownerScope: 'user'     AND ownerId = userId
+  OR ownerScope: 'session'  AND ownerId = sessionId
 ```
+
+Three things about that filter:
+
+- It reads from **`users.profile`**, never from process config
+  ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)).
+- `curriculumIds = []` means curriculum-neutral content, which stays eligible for
+  everyone. Most good explanations are.
+- The `user`/`session` legs are a **security** boundary, not a relevance one, and
+  they have a dedicated integration test.
+
+`stageRange` deliberately does **not** appear here. It ranks and it caveats; it
+never excludes. A learner reaching past their syllabus is the best signal they
+can send, and a filter that silently swallows the answer is the worst possible
+response to it.
 
 Concept-targeted boost: chunks tagged with a `conceptId` from step 1 get a rank
 bonus before fusion.
@@ -103,10 +118,17 @@ tokens.
 Roughly 300 tokens of **hand-formatted prose**, not a JSON dump. Models read
 prose far better, and the token cost is lower.
 
+The profile half comes from onboarding ([10-onboarding.md](10-onboarding.md)),
+the mastery half from the learner plane. Stage is written with its **local label**
+so the model reasons in the learner's own vocabulary, and notation conventions
+come from their curriculum:
+
 ```
 LEARNER
-Class 10 CBSE, Mathematics. Goal: board exam, 14 Feb 2026 (181 days).
-Prefers explanations in Hinglish. Studies ~40 min/day, streak 12.
+Class 10 (India), CBSE Mathematics. Goal: board exam, 14 Feb 2027 (181 days).
+Explanations in English, Hindi where it reads more naturally; keep technical
+terms in English. Notation: cosec/sec/cot, Commonwealth quadrilateral names,
+lakh-crore digit grouping. Studies ~40 min/day, streak 12.
 
 RELEVANT MASTERY
   sin-cos-identities   0.34  learning   last seen 2 days ago
@@ -125,6 +147,13 @@ RECENT
 concepts detected in step 1 appear — never the whole mastery table.
 
 Rules:
+- **Local labels, not internal ones.** `Class 10 (India)`, never `stage: 10`.
+- **Notation is stated explicitly**, from the curriculum's `notation` profile. A
+  tutor confidently writing `trapezoid` at a learner who was taught `trapezium`
+  is worse than one that says nothing.
+- **No PII, ever.** No name, no contact detail, no school. The card addresses the
+  learner in the second person, so a prompt leak is not a PII leak.
+- **One prompt, per-learner context.** Never branch prompt templates per country.
 - Mastery is shown with its state word, not just a number; the model reasons
   better about `learning` than about `0.34`.
 - Prerequisite gaps are flagged explicitly, because that is the single most

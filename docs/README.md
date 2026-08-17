@@ -13,6 +13,7 @@ Read in order the first time. After that, jump by task.
 | 07 | [Phases](07-phases.md) | The build order, with a measurable exit gate per phase |
 | 08 | [Setup](08-setup.md) | Accounts, keys, connection strings — step by step |
 | 09 | [Conventions](09-conventions.md) | Code style, testing, evals, commits |
+| 10 | [Onboarding](10-onboarding.md) | The journey, the global stage ladder, consent and moderation |
 
 ## Decision records
 
@@ -24,6 +25,7 @@ ADR — not by editing history.
 - [0003 — Event-sourced learner state](adr/0003-event-sourced-learner-state.md)
 - [0004 — Messages are a tree](adr/0004-messages-are-a-tree.md)
 - [0005 — Duel is a synchronized replay](adr/0005-duel-is-a-replay.md)
+- [0006 — Universal concept graph, curriculum overlays](adr/0006-curriculum-agnostic-concepts.md)
 
 ## Keeping these honest
 

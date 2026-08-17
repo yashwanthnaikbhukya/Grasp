@@ -43,10 +43,10 @@ async function collect(): Promise<Check[]> {
 
   checks.push({
     phase: 0,
-    name: 'Content scope',
+    name: 'First corpus',
     state: 'ok',
-    detail: `${env.scope.board} · Class ${env.scope.grade} · ${env.scope.subject}`,
-    fix: 'Change with GRASP_BOARD / GRASP_GRADE / GRASP_SUBJECT',
+    detail: `${env.seed.curriculumId} · ${env.seed.subject} (ingestion only)`,
+    fix: 'Change with GRASP_SEED_CURRICULUM / GRASP_SEED_SUBJECT. Learner scope lives on users.profile.',
   });
 
   if (!present(env.mongo.uri)) {

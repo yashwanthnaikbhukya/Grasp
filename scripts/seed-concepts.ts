@@ -86,27 +86,15 @@ const depths = computeDepths();
 
 // ---- Write ---------------------------------------------------------------
 
-const scope = seed.scope;
-if (
-  scope.board !== env.scope.board ||
-  scope.grade !== env.scope.grade ||
-  scope.subject !== env.scope.subject
-) {
-  console.log(
-    `${DIM}note: seed scope (${scope.board}/${scope.grade}/${scope.subject}) differs from ` +
-      `env scope (${env.scope.board}/${env.scope.grade}/${env.scope.subject}). Using the seed's.${OFF}\n`,
-  );
-}
-
+// Concepts are universal — no board, no grade. Curricula are overlays.
+// See docs/adr/0006-curriculum-agnostic-concepts.md.
 const ops = seed.concepts.map((c) => ({
   updateOne: {
     filter: { _id: c._id },
     update: {
       $set: {
         ...c,
-        board: scope.board,
-        grade: scope.grade,
-        subject: scope.subject,
+        subject: c.subject ?? seed.subject,
         depth: c.depth ?? depths.get(c._id) ?? 0,
       },
     },
@@ -119,9 +107,15 @@ const res = await collections.concepts().bulkWrite(ops as never);
 const roots = seed.concepts.filter((c) => c.prereqIds.length === 0).length;
 const maxDepth = Math.max(...depths.values());
 
-console.log(`${GREEN}✓${OFF} ${BOLD}${seed.concepts.length} concepts${OFF} loaded`);
+console.log(
+  `${GREEN}✓${OFF} ${BOLD}${seed.concepts.length} concepts${OFF} loaded ${DIM}(${seed.subject}, universal)${OFF}`,
+);
 console.log(`  ${DIM}upserted ${res.upsertedCount} · modified ${res.modifiedCount}${OFF}`);
 console.log(`  ${DIM}${roots} root concepts (no prerequisites) · max chain depth ${maxDepth}${OFF}`);
+console.log(
+  `  ${DIM}first corpus to ingest against: ${env.seed.curriculumId}` +
+    ` (GRASP_SEED_CURRICULUM)${OFF}`,
+);
 
 if (seed.concepts.length < 100) {
   console.log(

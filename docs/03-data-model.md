@@ -38,28 +38,54 @@ events that supersede, not edits.
 | `_id` | ObjectId | |
 | `email` | string | unique |
 | `name` | string | |
-| `board` / `grade` / `subject` | string | the learner's scope; filters retrieval |
-| `goal` | string | free text, injected into the learner card |
-| `examDate` | Date? | drives the study plan and review urgency |
-| `langPref` | enum | `en` \| `hinglish` — materially changes tutor output |
+| `profile` | LearnerProfile | **everything onboarding discovers** — region, locale, age, stage, curriculumIds, subjects, goal, language, depth, consent. Replaced the old process-level board/grade/subject scope ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)). Every field optional with a default. |
 | `streak` | `{ current, longest, lastActiveDate }` | |
 | `xp` | number | |
 | `placementDoneAt` | Date? | null ⇒ show cold-start placement |
 
 ### Content plane
 
-**`concepts`** — the curriculum graph. Authored, not generated. ~150–300 rows.
+**`concepts`** — the **universal** graph. Authored, not generated. ~150–300 rows
+per subject. No board, no grade ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)).
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `_id` | string | stable slug, e.g. `sin-cos-identities`. Human-readable on purpose. |
-| `name` | string | display |
-| `aliases` | string[] | boosts retrieval and concept tagging recall |
-| `board`/`grade`/`subject`/`chapter` | string | |
-| `prereqIds` | string[] | **edges of the DAG.** Drives frontier + gap detection |
+| `name` | string | canonical international-English name |
+| `aliases` | string[] | every local + colloquial variant (`cosec`, `SOH CAH TOA`). **Does real work** — feeds retrieval recall and cross-curriculum tagging. |
+| `subject` / `domain` | string | universal, not a curriculum's chapter name |
+| `prereqIds` | string[] | **edges of the DAG.** The expensive artifact; authored once, reused by every curriculum |
 | `description` | string | one paragraph, used as tagging context |
 | `objectives` | string[] | learning objectives; card generation targets these |
-| `depth` | number | topological depth, denormalized for ordering |
+| `stageRange` | `{min,max}`? | **advisory** typical band. Ranks and caveats, never refuses |
+| `depth` | number | topological depth, computed by the loader |
+
+**`curricula`** — one row per real-world syllabus. Data, not code: adding one is
+adding a row to `data/curricula.seed.json`.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | string | slug, e.g. `gb-gcse-maths` |
+| `name` / `authority` | string | as a learner would recognise it |
+| `regions` | string[] | ISO-3166 codes, or `['*']` for international (IB, Cambridge) |
+| `subject` / `stageRange` / `language` | | onboarding candidate filter |
+| `notation` | NotationProfile | `csc` vs `cosec`, `trapezoid` vs `trapezium`, decimal separator, lakh/crore grouping, units. **Not cosmetic** — `trapezoid` denotes different shapes in US and UK English |
+| `exam` | `{name, typicalMonth}`? | drives review urgency |
+| `active` | bool | false hides it from onboarding but keeps existing learners working |
+
+**`curriculumMappings`** — the join, and where all local truth lives.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `curriculumId` / `conceptId` | | compound unique |
+| `localName` | string? | `cosec` where canonical is `csc` |
+| `localCode` | string? | the curriculum's own reference, e.g. `Ch 8.3` |
+| `sequenceIndex` | number | this curriculum's teaching order; drives coursework mode |
+| `inScope` | bool | some curricula exclude a concept outright |
+| `examWeight` | number? | share of the terminal exam; drives revision priority |
+
+> **A missing mapping row means "unmapped", not "out of scope."** An unmapped
+> concept degrades to the universal default so the learner sees more, not less.
 
 > The whole graph is a few hundred nodes — load it into memory and cache it.
 > Do not write recursive `$graphLookup` queries for traversal at this size.
@@ -75,6 +101,9 @@ events that supersede, not edits.
 | `text` | string | the chunk |
 | `embedding` | number[] | 768-dim (`nomic-embed-text`) |
 | `conceptIds` | string[] | tags — the interop layer |
+| `curriculumIds` | string[] | curricula this content is valid for. **Empty ⇒ curriculum-neutral**, always eligible. Serving several is the normal case |
+| `subject` / `language` | string | `language` is the corpus language; the tutor translates, retrieval does not |
+| `stageRange` | `{min,max}`? | advisory fit band |
 | `page` | number? | for citation deep-links |
 | `headingPath` | string[] | e.g. `["Ch 8", "8.2 Identities"]`; prepended at retrieval |
 | `tokenCount` | number | the broker budgets on this |
@@ -234,9 +263,14 @@ Defined in `packages/core/src/db/indexes.ts`; created by `pnpm db:indexes`
 | Collection | Index | Why |
 | --- | --- | --- |
 | `users` | `{ email: 1 }` unique | login |
-| `concepts` | `{ board:1, grade:1, subject:1 }` | scope load |
+| `concepts` | `{ subject:1, domain:1 }` | subject load |
+| `concepts` | `{ aliases:1 }` | cross-curriculum tagging + retrieval recall |
+| `curricula` | `{ regions:1, subject:1, active:1 }` | onboarding candidates |
+| `curriculumMappings` | `{ curriculumId:1, conceptId:1 }` unique | the join |
+| `curriculumMappings` | `{ curriculumId:1, sequenceIndex:1 }` | coursework teaching order |
 | `docChunks` | `{ ownerScope:1, ownerId:1 }` | scoped retrieval filter |
 | `docChunks` | `{ conceptIds:1 }` | concept-targeted retrieval |
+| `docChunks` | `{ curriculumIds:1, subject:1 }` | curriculum-scoped retrieval, per learner profile |
 | `docChunks` | `{ expiresAt:1 }` **TTL** | reclaim the 512 MB cap |
 | `docChunks` | **Atlas Search** `grasp_chunks_text` | BM25 leg of hybrid |
 | `docChunks` | **Atlas Vector Search** `grasp_chunks_vec` | vector leg |

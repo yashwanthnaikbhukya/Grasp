@@ -22,11 +22,19 @@ export const env = {
   nodeEnv: get('NODE_ENV', 'development'),
   appUrl: get('APP_URL', 'http://localhost:3000'),
 
-  /** The one narrow POC scope. See docs/01-product.md#scope. */
-  scope: {
-    board: get('GRASP_BOARD', 'CBSE'),
-    grade: get('GRASP_GRADE', '10'),
-    subject: get('GRASP_SUBJECT', 'Mathematics'),
+  /**
+   * Which corpus to ingest **first**. An ingestion setting only — it has no
+   * effect on what a learner can be. Scope is a property of the learner
+   * (`users.profile`), never of the deployment.
+   *
+   * Retrieval quality is a function of corpus coherence, so the first corpus is
+   * deliberately narrow; the schema is global from day one. Widening is adding
+   * rows, not changing types.
+   * See docs/adr/0006-curriculum-agnostic-concepts.md.
+   */
+  seed: {
+    curriculumId: get('GRASP_SEED_CURRICULUM', 'self-study'),
+    subject: get('GRASP_SEED_SUBJECT', 'mathematics'),
   },
 
   mongo: {

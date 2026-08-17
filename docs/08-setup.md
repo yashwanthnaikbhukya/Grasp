@@ -192,9 +192,9 @@ Atlas → your cluster → **Atlas Search** tab → **Create Search Index**.
     { "type": "filter", "path": "ownerScope" },
     { "type": "filter", "path": "ownerId" },
     { "type": "filter", "path": "conceptIds" },
-    { "type": "filter", "path": "board" },
-    { "type": "filter", "path": "grade" },
-    { "type": "filter", "path": "subject" }
+    { "type": "filter", "path": "curriculumIds" },
+    { "type": "filter", "path": "subject" },
+    { "type": "filter", "path": "language" }
   ]
 }
 ```
@@ -202,6 +202,12 @@ Atlas → your cluster → **Atlas Search** tab → **Create Search Index**.
 `numDimensions` **must** equal `OLLAMA_EMBED_DIM`. The filter paths are what let
 the scope filter run inside the vector search instead of after it — without them
 you'd retrieve then discard, which wrecks recall.
+
+`curriculumIds` is a filter path because retrieval scopes to the **learner's**
+curricula, read from `users.profile`
+([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)). Copy the JSON that
+`pnpm db:indexes` prints rather than this snippet — it is generated from live
+config, so it can never drift from your env.
 
 ### 5b — Full-text index
 
@@ -218,10 +224,10 @@ you'd retrieve then discard, which wrecks recall.
       "headingPath": { "type": "string", "analyzer": "lucene.standard" },
       "ownerScope":  { "type": "token" },
       "ownerId":     { "type": "token" },
-      "conceptIds":  { "type": "token" },
-      "board":       { "type": "token" },
-      "grade":       { "type": "token" },
-      "subject":     { "type": "token" }
+      "conceptIds":    { "type": "token" },
+      "curriculumIds": { "type": "token" },
+      "subject":       { "type": "token" },
+      "language":      { "type": "token" }
     }
   }
 }
@@ -263,6 +269,17 @@ pnpm setup:check
 
 Expected: Mongo ✓, Ollama ✓ with the embed model present, at least one hosted
 provider ✓.
+
+Load the curricula and the concept graph:
+
+```bash
+pnpm db:seed          # curricula (committed) + your concepts.seed.json
+```
+
+`db:seed:curricula` ships ~22 curricula across 15 regions, including the
+`self-study` fallback that a learner with no matching curriculum lands on.
+`db:seed:concepts` needs `data/concepts.seed.json` — the Phase 0 deliverable
+(copy `data/concepts.seed.example.json` and fill it in).
 
 Then the real gate:
 

@@ -1,4 +1,7 @@
 export * from './common';
+export * from './stage';
+export * from './curriculum';
+export * from './profile';
 export * from './concept';
 export * from './content';
 export * from './learner';

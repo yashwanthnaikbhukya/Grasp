@@ -25,7 +25,7 @@ export async function GET() {
   return Response.json(
     {
       ready,
-      scope: env.scope,
+      seedCorpus: env.seed,
       mongo,
       providers: {
         configured: providers,

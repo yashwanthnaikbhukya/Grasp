@@ -16,6 +16,8 @@
     "setup:check": "tsx scripts/setup-check.ts",
     "db:indexes": "tsx scripts/db-indexes.ts",
     "db:seed:concepts": "tsx scripts/seed-concepts.ts",
+    "db:seed:curricula": "tsx scripts/seed-curricula.ts",
+    "db:seed": "pnpm db:seed:curricula && pnpm db:seed:concepts",
     "eval": "tsx scripts/eval.ts"
   },
   "devDependencies": {

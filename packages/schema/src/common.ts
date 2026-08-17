@@ -17,16 +17,6 @@ export const ConceptId = z
 export const Surface = z.enum(['ask', 'reps', 'snap', 'duel', 'map', 'slips', 'test', 'placement']);
 export type Surface = z.infer<typeof Surface>;
 
-export const LangPref = z.enum(['en', 'hinglish']);
-export type LangPref = z.infer<typeof LangPref>;
-
-export const Scope = z.object({
-  board: z.string().min(1),
-  grade: z.string().min(1),
-  subject: z.string().min(1),
-});
-export type Scope = z.infer<typeof Scope>;
-
 /** Where a retrievable chunk belongs. Drives the retrieval security filter. */
 export const OwnerScope = z.enum(['global', 'user', 'session']);
 export type OwnerScope = z.infer<typeof OwnerScope>;

@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { ConceptId, LangPref, MasteryState, ObjectIdString, RootCause, Surface } from './common';
+import { ConceptId, MasteryState, ObjectIdString, RootCause, Surface } from './common';
+import { LearnerProfileSchema } from './profile';
 
 /**
  * Derived learner state. Never authored, never hand-edited — rebuildable by
@@ -90,16 +91,20 @@ export type Slip = z.infer<typeof SlipSchema>;
 export const UserSchema = z.object({
   _id: ObjectIdString.optional(),
   email: z.string().email(),
+  /**
+   * Display name only. **Never enters a prompt** — the learner card addresses the
+   * learner in the second person and carries no PII, so a prompt leak is not a
+   * PII leak. See docs/10-onboarding.md.
+   */
   name: z.string().min(1),
 
-  board: z.string(),
-  grade: z.string(),
-  subject: z.string(),
-
-  goal: z.string().default(''),
-  examDate: z.coerce.date().nullable().default(null),
-  /** Materially changes tutor output — not cosmetic. */
-  langPref: LangPref.default('en'),
+  /**
+   * Everything about who this learner is and what they need, from onboarding.
+   * This replaced the old process-level board/grade/subject scope: scope belongs
+   * to the learner, not the deployment.
+   * See docs/adr/0006-curriculum-agnostic-concepts.md.
+   */
+  profile: LearnerProfileSchema.default({}),
 
   streak: z
     .object({

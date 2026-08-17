@@ -13,21 +13,34 @@ are the only mechanism that stops it.
 
 *Weeks 1–2. Goal: the spine exists and is observable.*
 
-### 0.1 Pick the scope ☐
+### 0.1 Pick the first corpus ☐
 
-**Do this before writing any other code.** One board, one grade, one subject, set
-in `.env.local`. Everything downstream filters by it. See
-[01-product.md#scope](01-product.md#scope).
+Not the product's scope — Grasp is global, and a learner's curriculum lives on
+their profile ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)). This is
+purely **which corpus to ingest first**, set as `GRASP_SEED_CURRICULUM`.
 
-### 0.2 Author the concept graph ☐
+Pick one coherent secondary-mathematics curriculum. Retrieval quality is a
+function of corpus coherence, and the concept graph you author for it is mostly
+reusable for every other maths curriculum.
 
-150–300 nodes with `prereqIds`. Two days of work by hand from the syllabus, using
-a model as a drafting assistant — **not** fully generated, because the
-prerequisite edges are the part that has to be right and the part models get
-wrong. This artifact pays for itself for the rest of the project: it drives
-retrieval scoping, frontier gating, gap detection, and the Map surface.
+### 0.2 Author the universal concept graph ☐
 
-Seed file: `data/concepts.seed.json`. Loader: `pnpm db:seed:concepts`.
+150–300 nodes with `prereqIds`. **Curriculum-free** — no board, no grade. Two
+days of work by hand from a syllabus, using a model as a drafting assistant —
+**not** fully generated, because the prerequisite edges are the part that has to
+be right and the part models get wrong.
+
+This is the artifact that pays for itself for the rest of the project, and now
+across every curriculum you ever add: it drives retrieval, frontier gating, gap
+detection, and Map. The second curriculum is a `curricula` row plus mappings.
+
+Take `aliases` seriously. They carry every local variant (`cosec` / `csc`,
+`trapezium` / `trapezoid`) and feed both retrieval recall and cross-curriculum
+tagging. They are load-bearing, not decoration.
+
+Seed files: `data/concepts.seed.json` (universal) and `data/curricula.seed.json`
+(overlays, ~22 curricula across 15 regions already committed).
+Loader: `pnpm db:seed`.
 
 ### 0.3 Infrastructure ☑
 
@@ -40,7 +53,11 @@ Seed file: `data/concepts.seed.json`. Loader: `pnpm db:seed:concepts`.
       (`query.understand`, `concept.tag`, `slip.classify`, `tutor.reply`)
 - ☑ `pnpm setup:check` — reports what's wired, per phase, with fixes
 - ☑ `pnpm db:indexes` — all regular indexes + prints the Atlas Search defs
-- ☑ `pnpm db:seed:concepts` — loads the graph, validates edges, detects cycles
+- ☑ `pnpm db:seed` — curricula (~22 across 15 regions) + universal concept graph,
+      with edge validation and cycle detection
+- ☑ Global stage ladder (`stage` + `stageLabel`), 25 regions hand-checked,
+      with round-trip tests
+- ☑ `LearnerProfile` + completeness scoring (the onboarding target schema)
 - ☑ Vitest + registry guard tests (prompt existence, tier invariants, cache safety)
 - ☑ `/debug/gateway` — makes the gate below verifiable in a browser
 - ☐ **Atlas cluster + the two Atlas Search indexes** ([08-setup.md](08-setup.md))
@@ -71,11 +88,29 @@ Verify with: `pnpm setup:check` then the `/debug/gateway` page.
 
 *Weeks 3–6. Goal: a tutor that is visibly not ChatGPT.*
 
+### 1.0 Onboarding ☐
+
+Built **before** chat, because the learner card is empty until it exists. Full
+spec: [10-onboarding.md](10-onboarding.md).
+
+- ☐ Five screens, under 90 seconds, progressive and skippable
+- ☐ Country geo-guess, editable → locale, units, notation, curriculum candidates
+- ☐ Age (asked plainly, never inferred) + stage picker with **local labels**
+- ☐ Curriculum multi-select, with "Other / self-study" always working
+- ☐ Goal + minutes/day *(deferrable to first session)*
+- ☐ Language + code-switching + depth *(deferrable)*
+- ☐ `profileCompleteness` nudge — never a blocking modal
+- ☐ **Consent gating by age and region** — under threshold ⇒ guardian flow, and
+      nothing beyond account creation processed until consent is recorded
+- ☐ Learner-card snapshot tests across the profile matrix: full, minimal,
+      self-study adult, code-switching
+
 ### 1.1 Ingestion ☐
 
 - ☐ Chunker (layout-naive; heading-path aware)
 - ☐ Local embedding via Ollama, batched
 - ☐ `concept.tag` pass over every chunk
+- ☐ Stamp `curriculumIds`, `subject`, `stageRange`, `language` on every chunk
 - ☐ Ingest one textbook chapter end to end
 - ☐ Retrieval eval: 20 hand-written student questions, measure `recall@5`
 
@@ -85,7 +120,8 @@ Verify with: `pnpm setup:check` then the `/debug/gateway` page.
 - ☐ Atlas Vector Search leg
 - ☐ RRF fusion
 - ☐ Local cross-encoder rerank, top-20 → top-5
-- ☐ Scope filter + **security test**: a user cannot retrieve another user's chunks
+- ☐ Profile-driven scope filter + **security test**: a user cannot retrieve
+      another user's chunks; curriculum-neutral content stays eligible for everyone
 
 ### 1.3 Context broker v1 ☐
 

@@ -65,24 +65,48 @@ misconception, time pressure — is the single most differentiated thing in the
 product, and it costs almost nothing to build because the data already exists by
 Phase 3.
 
-## Scope
+## Audience and scope
 
-**One board, one grade, one subject.** Configured in `.env.local` as
-`GRASP_BOARD` / `GRASP_GRADE` / `GRASP_SUBJECT`. Target 150–300 concept nodes.
+**Grasp is for students globally.** There is no deployment-wide curriculum.
 
-This is not a limitation of the prototype. It is the mechanism.
+Two things that get conflated and are actually independent:
 
-Retrieval quality is a function of corpus coherence, not corpus size. A tutor
-grounded in 300 well-tagged concepts and one textbook will outperform one
-grounded in 40,000 loosely-tagged documents, and it will do so on a laptop with
-no budget. Widening scope before the loop works is the most common way projects
-like this die — the retrieval gets mushy, the concept tags get noisy, mastery
-stops predicting anything, and there's no way to tell which layer broke.
+### The product is global from day one
 
-**Recommended default if undecided:** one competitive-prep subject. The syllabus
-is well-defined, the concept graph has clean prerequisite structure, and the
-users tolerate a rough UI. K–12 board is the better commercial path because it
-unlocks the teacher cockpit, but it is a harder first scope.
+Region, education stage, curriculum, language, and goal are properties of the
+**learner**, discovered during onboarding ([10-onboarding.md](10-onboarding.md))
+and stored on `users.profile`. Two learners on different continents, following
+different curricula, in different languages, work in the same instance.
+
+That requires the concept graph to be **universal** and curricula to be
+**overlays** on it ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)).
+`pythagorean-identity` requires `pythagoras-theorem` in every curriculum on
+earth — so the expensive artifact, the prerequisite DAG, is authored once and
+reused everywhere. The second curriculum costs a fraction of the first.
+
+It also requires never storing a local label in a structural field. "Class 10"
+(India), "Grade 10" (US), "Year 11" (UK), and "MYP 5" (IB) are the same age band
+under four incompatible names — and Year 11 is *not* Grade 11. Grasp stores a
+normalized integer `stage` and localizes the label for display.
+
+### The first ingested corpus is still narrow
+
+Retrieval quality is a function of **corpus coherence**, not corpus breadth. A
+tutor grounded in 300 well-tagged concepts and one good textbook outperforms one
+grounded in 40,000 loosely-tagged documents, and does it with no budget.
+
+So the first corpus is one subject and one stage band, named by
+`GRASP_SEED_CURRICULUM`. That is an **ingestion** setting — it limits what has
+been *loaded*, never what a learner can *be*. Widening is adding rows.
+
+Widening the corpus before the loop works is a common way projects like this
+die: retrieval goes mushy, concept tags go noisy, mastery stops predicting
+anything, and there's no way to tell which layer broke.
+
+**Recommended first corpus:** a well-defined secondary-mathematics curriculum
+with clean prerequisite structure. The concept graph you author for it is
+mostly reusable for every other maths curriculum, which is the entire point of
+the universal-graph decision.
 
 ## Glossary
 
@@ -90,7 +114,7 @@ Terms used precisely throughout the codebase and docs.
 
 | Term | Means |
 | --- | --- |
-| **Concept** | A node in the curriculum graph. The atomic unit of knowledge. Has prerequisite edges. |
+| **Concept** | A node in the **universal** graph. The atomic unit of knowledge. Curriculum-free; has prerequisite edges. |
 | **Concept tag** | A reference from any content atom (chunk, question, doubt, message) to a concept. The interop layer. |
 | **Surface** | A learner-facing feature. Thin by design. |
 | **Spine** | The substrate: content plane + learner plane + event plane + broker. |
@@ -102,6 +126,9 @@ Terms used precisely throughout the codebase and docs.
 | **Root cause** | Why a mistake happened. Fixed taxonomy, never free text. |
 | **Due** | A concept whose `nextDueAt` has passed. Drives the review pool. |
 | **Frontier** | A concept not yet learned whose prerequisites are all satisfied. |
+| **Curriculum** | A real-world syllabus. An *overlay* on the concept graph — never owns concepts. |
+| **Stage** | Normalized ladder position, an integer. `stageLabel(stage, region)` localizes it. |
+| **Profile** | What onboarding discovers about a learner: region, stage, curricula, language, goal. |
 | **Gate** | A phase's measurable exit criterion. See [07-phases.md](07-phases.md). |
 
 ## What Grasp is not

@@ -13,6 +13,8 @@ import { db } from './client';
 export const COLLECTIONS = {
   users: 'users',
   concepts: 'concepts',
+  curricula: 'curricula',
+  curriculumMappings: 'curriculumMappings',
   sources: 'sources',
   docChunks: 'docChunks',
   questions: 'questions',
@@ -76,6 +78,8 @@ export interface DocCounter extends Document {
 export const collections = {
   users: () => col(COLLECTIONS.users),
   concepts: () => col(COLLECTIONS.concepts),
+  curricula: () => col(COLLECTIONS.curricula),
+  curriculumMappings: () => col(COLLECTIONS.curriculumMappings),
   sources: () => col(COLLECTIONS.sources),
   docChunks: () => col(COLLECTIONS.docChunks),
   questions: () => col(COLLECTIONS.questions),

@@ -15,15 +15,32 @@ import { db } from './client';
 export const REGULAR_INDEXES: Partial<Record<CollectionName, IndexDescription[]>> = {
   [COLLECTIONS.users]: [{ key: { email: 1 }, unique: true, name: 'email_unique' }],
 
+  // The universal concept graph — no board, no grade. See ADR 0006.
   [COLLECTIONS.concepts]: [
-    { key: { board: 1, grade: 1, subject: 1 }, name: 'scope' },
+    { key: { subject: 1, domain: 1 }, name: 'subject_domain' },
     { key: { prereqIds: 1 }, name: 'prereqs' },
+    { key: { aliases: 1 }, name: 'aliases' },
+  ],
+
+  [COLLECTIONS.curricula]: [
+    // Onboarding: candidates for a learner's region + stage.
+    { key: { regions: 1, subject: 1, active: 1 }, name: 'onboarding_candidates' },
+  ],
+
+  [COLLECTIONS.curriculumMappings]: [
+    { key: { curriculumId: 1, conceptId: 1 }, unique: true, name: 'pair_unique' },
+    // Coursework mode follows this curriculum's own teaching order.
+    { key: { curriculumId: 1, sequenceIndex: 1 }, name: 'teaching_order' },
+    { key: { conceptId: 1 }, name: 'reverse_lookup' },
   ],
 
   [COLLECTIONS.docChunks]: [
     // The retrieval security filter. A user must never read another's chunks.
     { key: { ownerScope: 1, ownerId: 1 }, name: 'owner' },
     { key: { conceptIds: 1 }, name: 'concepts' },
+    // Curriculum-scoped retrieval, per the learner's profile.
+    { key: { curriculumIds: 1, subject: 1 }, name: 'curriculum' },
+    { key: { language: 1 }, name: 'language' },
     { key: { sourceId: 1 }, name: 'source' },
     // Reclaims the 512 MB cap from throwaway session uploads.
     { key: { expiresAt: 1 }, expireAfterSeconds: 0, name: 'ttl_session_chunks' },
@@ -35,6 +52,7 @@ export const REGULAR_INDEXES: Partial<Record<CollectionName, IndexDescription[]>
       key: { conceptIds: 1, verificationStatus: 1, difficulty: 1 },
       name: 'card_selection',
     },
+    { key: { curriculumIds: 1, verificationStatus: 1 }, name: 'curriculum_bank' },
     { key: { verificationStatus: 1, createdAt: -1 }, name: 'verification_queue' },
   ],
 
@@ -163,9 +181,9 @@ export function searchIndexDefinitions() {
           { type: 'filter', path: 'ownerScope' },
           { type: 'filter', path: 'ownerId' },
           { type: 'filter', path: 'conceptIds' },
-          { type: 'filter', path: 'board' },
-          { type: 'filter', path: 'grade' },
+          { type: 'filter', path: 'curriculumIds' },
           { type: 'filter', path: 'subject' },
+          { type: 'filter', path: 'language' },
         ],
       },
     },
@@ -182,9 +200,9 @@ export function searchIndexDefinitions() {
             ownerScope: { type: 'token' },
             ownerId: { type: 'token' },
             conceptIds: { type: 'token' },
-            board: { type: 'token' },
-            grade: { type: 'token' },
+            curriculumIds: { type: 'token' },
             subject: { type: 'token' },
+            language: { type: 'token' },
           },
         },
       },
