@@ -37,6 +37,7 @@ export default async function AppHome() {
 
   return (
     <main className="wrap">
+      <div className="stagger" style={{ display: 'grid' }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <p className="eyebrow">Signed in</p>
@@ -47,7 +48,7 @@ export default async function AppHome() {
         <SignOutButton />
       </div>
 
-      <div className="card">
+      <div className="card card-hover">
         <p className="eyebrow">Your learner profile</p>
         <table>
           <tbody>
@@ -113,7 +114,7 @@ export default async function AppHome() {
         </p>
       </div>
 
-      <div className="card">
+      <div className="card card-hover">
         <p className="eyebrow">Your data</p>
         <p className="muted" style={{ marginTop: 0, fontSize: '0.9rem' }}>
           Read through user-scoped accessors — a query without your id cannot be written.
@@ -128,7 +129,7 @@ export default async function AppHome() {
         </table>
       </div>
 
-      <div className="card">
+      <div className="card card-hover">
         <p className="eyebrow">Surfaces</p>
         <p style={{ marginTop: 0, color: 'var(--ink-2)' }}>
           Auth and onboarding are done. <strong>Ask</strong> is next — retrieval, the context
@@ -139,6 +140,7 @@ export default async function AppHome() {
             <span key={s} className="pill pill-warn">{s} — not built</span>
           ))}
         </p>
+      </div>
       </div>
     </main>
   );

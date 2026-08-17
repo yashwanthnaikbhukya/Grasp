@@ -26,7 +26,7 @@ export default function Home() {
         One learner model, many surfaces.
       </p>
 
-      <div className="card" style={{ marginTop: 'var(--s7)' }}>
+      <div className="card card-hover" style={{ marginTop: 'var(--s7)' }}>
         <p className="eyebrow">Scope belongs to the learner</p>
         <p style={{ margin: '0 0 var(--s4)', color: 'var(--ink-2)' }}>
           There is no deployment-wide curriculum. Region, stage, curriculum, and language are
@@ -50,7 +50,7 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="card">
+      <div className="card card-hover">
         <p className="eyebrow">First corpus to ingest</p>
         <p className="mono" style={{ margin: 0, fontSize: '1.05rem' }}>
           {env.seed.curriculumId} · {env.seed.subject}

@@ -51,7 +51,7 @@ function AuthForm() {
   }
 
   return (
-    <main className="wrap" style={{ maxWidth: '26rem' }}>
+    <main className="wrap rise" style={{ maxWidth: '27rem' }}>
       <p className="eyebrow">Grasp</p>
       <h1 style={{ fontSize: '1.75rem', margin: '0 0 var(--s2)' }}>
         {signingUp ? 'Create your account' : 'Welcome back'}
@@ -62,7 +62,7 @@ function AuthForm() {
           : 'Pick up where you left off.'}
       </p>
 
-      <form onSubmit={submit} className="card" style={{ display: 'grid', gap: 'var(--s4)' }}>
+      <form onSubmit={submit} className="card" style={{ display: 'grid', gap: 'var(--s4)', padding: 'var(--s6)' }}>
         {signingUp && (
           <label style={{ display: 'grid', gap: 'var(--s2)' }}>
             <span className="eyebrow" style={{ margin: 0 }}>Name</span>

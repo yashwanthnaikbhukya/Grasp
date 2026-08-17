@@ -151,7 +151,7 @@ export function OnboardingFlow({
   }
 
   return (
-    <main className="wrap" style={{ maxWidth: '34rem' }}>
+    <main className="wrap rise" style={{ maxWidth: '35rem' }}>
       <p className="eyebrow">Setting up · {step + 1} of {TOTAL_STEPS}</p>
       <div className="steps" aria-hidden="true">
         {Array.from({ length: TOTAL_STEPS }, (_, i) => (
@@ -159,6 +159,7 @@ export function OnboardingFlow({
         ))}
       </div>
 
+      <div key={step} className="card slide-in" style={{ padding: 'var(--s6)' }}>
       {step === 0 && (
         <>
           <h1 style={{ fontSize: '1.6rem', margin: '0 0 var(--s2)' }}>
@@ -378,6 +379,8 @@ export function OnboardingFlow({
           </div>
         </>
       )}
+
+      </div>
 
       {error && (
         <p role="alert" className="pill pill-bad" style={{ padding: 'var(--s3)', marginTop: 'var(--s4)', whiteSpace: 'normal', textTransform: 'none', letterSpacing: 0 }}>
