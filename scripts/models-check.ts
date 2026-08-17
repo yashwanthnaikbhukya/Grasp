@@ -27,6 +27,19 @@ interface Report {
   configured: [string, string][];
 }
 
+/**
+ * Provider model lists mix in things that cannot answer a chat completion —
+ * speech-to-text, text-to-speech, image and music generation, safety
+ * classifiers, embedding models. Suggesting one of those as "the smallest
+ * available" sends you off to debug a model that was never going to work.
+ */
+const NOT_CHAT =
+  /whisper|tts|orpheus|prompt-guard|safeguard|embedding|-image|nano-banana|lyria|robotics|computer-use|native-audio|\blive\b|veo|imagen/i;
+
+function chatOnly(models: string[]): string[] {
+  return models.filter((m) => !NOT_CHAT.test(m));
+}
+
 /** Small-first ordering, so the cheap dev-stage options surface at the top. */
 function smallFirst(models: string[]): string[] {
   const size = (m: string): number => {
@@ -175,8 +188,8 @@ for (const r of reports) {
     );
   }
 
-  const suggestions = smallFirst(r.models).slice(0, 8);
-  console.log(`  ${DIM}smallest available: ${suggestions.join(', ')}${OFF}\n`);
+  const suggestions = smallFirst(chatOnly(r.models)).slice(0, 6);
+  console.log(`  ${DIM}smallest chat-capable: ${suggestions.join(', ')}${OFF}\n`);
 }
 
 if (anyBadConfig) {

@@ -294,6 +294,7 @@ fails a request because tracing failed.
 pnpm setup:check     # is the value present?
 pnpm models:check    # does the model id exist on this key?
 pnpm smoke           # does it actually work, end to end?
+pnpm traces          # what did the last N gateway calls actually do?
 ```
 
 The three answer different questions. `smoke` makes real calls with nothing
@@ -302,6 +303,10 @@ and reads a Mongo document to prove the credential has `readWrite` (a ping only
 proves reachability), then runs the gateway twice, the second time with your
 primary provider forced down. It skips what isn't configured rather than failing,
 so it's useful from the first minute.
+
+`pnpm traces` reads the local `llmCalls` record and aggregates per provider. The
+number to watch is **average failover depth** — a rising one means your primary
+free tier is saturating, and there is no other signal for that.
 
 Expected for Phase 0: Mongo ✓ and at least one provider ✓. Ollama shows under
 Phase 1 and does not block.
