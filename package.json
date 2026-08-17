@@ -20,6 +20,7 @@
     "concepts:grow": "tsx scripts/concepts-grow.ts",
     "ingest": "tsx scripts/ingest.ts",
     "retrieval:eval": "tsx scripts/retrieval-eval.ts",
+    "cards:build": "tsx scripts/cards-build.ts",
     "concepts:reset": "tsx scripts/concepts-reset.ts",
     "concepts:calibrate": "tsx scripts/concepts-calibrate.ts",
     "db:indexes": "tsx scripts/db-indexes.ts",

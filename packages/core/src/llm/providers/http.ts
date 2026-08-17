@@ -44,7 +44,12 @@ export async function postJson(
           retryAfterMs: Number.isFinite(retryAfter) ? retryAfter * 1000 : undefined,
         });
       }
-      throw new ProviderRequestError(`${opts.provider} ${res.status}`, meta);
+      // The body is the whole diagnostic for a 4xx — a bare status tells you
+      // that the request was malformed but not which part.
+      throw new ProviderRequestError(
+        `${opts.provider} ${res.status}: ${text.slice(0, 400)}`,
+        meta,
+      );
     }
 
     return (await res.json()) as unknown;

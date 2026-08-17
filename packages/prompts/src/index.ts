@@ -1,4 +1,6 @@
 import type { PromptTemplate } from './types';
+import { cardGenerateV1 } from './templates/card-generate.v1';
+import { cardSolveV1 } from './templates/card-solve.v1';
 import { conceptProposeV1 } from './templates/concept-propose.v1';
 import { conceptProposeV2 } from './templates/concept-propose.v2';
 import { conceptTagV1 } from './templates/concept-tag.v1';
@@ -20,6 +22,8 @@ const templates: Record<string, PromptTemplate> = {
   [queryUnderstandV1.id]: queryUnderstandV1,
   [conceptTagV1.id]: conceptTagV1,
   [conceptProposeV1.id]: conceptProposeV1,
+  [cardGenerateV1.id]: cardGenerateV1,
+  [cardSolveV1.id]: cardSolveV1,
   [conceptProposeV2.id]: conceptProposeV2,
   [slipClassifyV1.id]: slipClassifyV1,
   [tutorReplyV1.id]: tutorReplyV1,

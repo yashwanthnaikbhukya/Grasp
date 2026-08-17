@@ -39,6 +39,13 @@ function makeAdapter(cfg: {
         max_tokens: req.maxOutputTokens,
       };
 
+      // Reasoning tokens are drawn from the same budget as the response, so on a
+      // schema-constrained call they can consume it entirely and leave truncated
+      // JSON — which comes back as a 400 `json_validate_failed` with an empty
+      // body, not as a length error. Unknown fields are ignored by providers
+      // that do not support this.
+      if (req.reasoningEffort) body.reasoning_effort = req.reasoningEffort;
+
       if (req.jsonSchema) {
         body.response_format = {
           type: 'json_schema',

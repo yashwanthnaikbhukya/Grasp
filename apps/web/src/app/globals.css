@@ -686,3 +686,159 @@ sup.cite:hover { background: var(--cobalt-edge); }
   padding: 9px var(--s3);
 }
 .ask-composer textarea:focus { box-shadow: none; background: transparent; }
+
+/* =============================================================================
+   Reps
+   ============================================================================= */
+
+.reps {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: var(--s4);
+  gap: var(--s3);
+}
+
+.reps-head { display: flex; justify-content: space-between; align-items: center; }
+.reps-stats { display: flex; gap: var(--s3); align-items: center; }
+
+.reps-progress {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--rule);
+  overflow: hidden;
+}
+.reps-progress i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--cobalt);
+  box-shadow: 0 0 10px -1px var(--cobalt-edge);
+  transition: width var(--t-slow) var(--ease);
+}
+
+.reps-stage { display: flex; align-items: center; }
+
+.reps-card {
+  width: 100%;
+  padding: var(--s6);
+  border-radius: var(--r-xl);
+  animation: rise var(--t-slow) var(--ease) both;
+}
+/* Cards leave the way a swipe would carry them, so replacing one reads as
+   moving forward rather than as a repaint. */
+.reps-card.leaving {
+  animation: cardLeave 180ms var(--ease-inout) both;
+}
+@keyframes cardLeave {
+  to { opacity: 0; transform: translate3d(0, -22px, 0) scale(0.97); }
+}
+
+.reps-meta {
+  display: flex;
+  gap: var(--s3);
+  align-items: center;
+  margin-bottom: var(--s5);
+}
+
+.reps-stem { font-size: 1.1rem; line-height: 1.55; margin-bottom: var(--s5); }
+.reps-stem p:last-child { margin-bottom: 0; }
+
+.reps-options { display: grid; gap: var(--s2); }
+
+.reps-option {
+  font: inherit;
+  text-align: left;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s3);
+  align-items: center;
+  color: var(--ink);
+  background: var(--glass-subtle);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: var(--s3) var(--s4);
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease), opacity var(--t) var(--ease);
+}
+.reps-option:hover:not(:disabled) {
+  border-color: var(--cobalt-edge);
+  transform: translateY(-1px);
+}
+.reps-option:disabled { cursor: default; }
+.reps-option p { margin: 0; }
+
+.reps-option kbd {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-4);
+  background: var(--glass);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 2px 7px;
+  min-width: 1.6rem;
+  text-align: center;
+}
+
+.reps-option.right {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+}
+.reps-option.right kbd { color: var(--ok); border-color: var(--ok); }
+.reps-option.wrong {
+  border-color: var(--bad);
+  background: var(--bad-soft);
+}
+.reps-option.wrong kbd { color: var(--bad); border-color: var(--bad); }
+.reps-option.dim { opacity: 0.42; }
+
+.reps-verdict {
+  margin-top: var(--s5);
+  padding: var(--s4);
+  border-radius: var(--r);
+  border: 1px solid var(--rule);
+  background: var(--glass-subtle);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: grid;
+  gap: var(--s3);
+}
+.reps-verdict.ok { border-color: var(--ok); background: var(--ok-soft); }
+.reps-verdict.no { border-color: var(--bad); background: var(--bad-soft); }
+.reps-verdict strong { font-family: var(--font-display); font-size: 1.05rem; }
+.reps-solution { font-size: 0.92rem; line-height: 1.6; }
+.reps-solution p:last-child { margin-bottom: 0; }
+
+.reps-foot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--s3) 0 var(--s5);
+}
+.reps-foot kbd {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* Skeletons rather than a spinner: they hold the shape of what is coming, so
+   the swap does not shift the page. */
+.reps-skeleton {
+  height: 1.1rem;
+  border-radius: 6px;
+  background: var(--glass);
+  animation: pulseSoft 1.4s var(--ease-inout) infinite;
+  margin-bottom: var(--s3);
+}
+.reps-skeleton.short { width: 60%; }
+
+@media (prefers-reduced-transparency: reduce) {
+  .reps-option, .reps-verdict { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}

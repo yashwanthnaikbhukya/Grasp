@@ -39,6 +39,16 @@ export interface TaskConfig {
   /** Deterministic, idempotent tasks only. Never a per-learner task. */
   cache: boolean;
   /**
+   * Reasoning budget, for providers that expose one.
+   *
+   * Reasoning tokens come out of the *same* budget as the response. On a
+   * schema-constrained task that is pure overhead — and worse, it silently
+   * truncates the JSON, which the provider then rejects as invalid rather than
+   * reporting as a length problem. `low` is right for extraction and generation
+   * against a schema; leave it unset where the reasoning is the point.
+   */
+  reasoningEffort?: 'low' | 'medium' | 'high';
+  /**
    * Providers this task must never fall back to.
    *
    * For tasks that write durable structure, a weak model producing plausible
@@ -54,7 +64,8 @@ export const TASKS = {
     tier: 'fast',
     prompt: 'query.understand@1',
     schema: QueryUnderstandingSchema,
-    maxOutputTokens: 400,
+    maxOutputTokens: 1_500,
+    reasoningEffort: 'low',
     timeoutMs: 8_000,
     // Per-conversation by nature — caching would serve a stale rewrite.
     cache: false,
@@ -98,7 +109,8 @@ export const TASKS = {
     tier: 'fast',
     prompt: 'concept.tag@1',
     schema: ConceptTaggingSchema,
-    maxOutputTokens: 300,
+    maxOutputTokens: 1_500,
+    reasoningEffort: 'low',
     timeoutMs: 15_000,
     // Same chunk always tags the same way — cache aggressively during ingest.
     cache: true,
@@ -114,7 +126,8 @@ export const TASKS = {
     tier: 'mid',
     prompt: 'concept.propose@2',
     schema: ConceptProposalSchema,
-    maxOutputTokens: 2_000,
+    maxOutputTokens: 4_000,
+    reasoningEffort: 'low',
     timeoutMs: 45_000,
     // Same passage → same proposal. Cheap win during a long ingest.
     cache: true,
@@ -130,7 +143,8 @@ export const TASKS = {
     tier: 'fast',
     prompt: 'card.generate@1',
     schema: GeneratedCardSchema,
-    maxOutputTokens: 1_200,
+    maxOutputTokens: 3_500,
+    reasoningEffort: 'low',
     timeoutMs: 30_000,
     cache: false,
   },
@@ -140,9 +154,16 @@ export const TASKS = {
     tier: 'mid',
     prompt: 'card.solve@1',
     schema: CardSolveSchema,
-    maxOutputTokens: 1_200,
+    // No reasoning cap here — working the problem out *is* the task, and a
+    // solver that skips the reasoning is not independent verification.
+    maxOutputTokens: 3_000,
     timeoutMs: 30_000,
+    // Two solves of the same question must be independent, so a cache hit on
+    // the second would make agreement meaningless.
     cache: false,
+    // No weak local fallback: a bad verdict here promotes a broken question to
+    // `verified`, and the learner is the one who finds out.
+    excludeProviders: ['ollama'],
   },
 
   // ---- Snap / Slips / Map --------------------------------------------------
@@ -159,7 +180,7 @@ export const TASKS = {
     tier: 'best',
     prompt: 'slip.classify@1',
     schema: SlipClassificationSchema,
-    maxOutputTokens: 400,
+    maxOutputTokens: 2_000,
     timeoutMs: 20_000,
     cache: false,
   },

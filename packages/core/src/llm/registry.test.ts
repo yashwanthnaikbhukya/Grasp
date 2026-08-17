@@ -13,8 +13,6 @@ import { TASKS, listTasks } from './registry';
 const PROMPT_PENDING: Record<string, string> = {
   'session.digest@1': 'Phase 1 — history compaction',
   'session.title@1': 'Phase 1 — session auto-titling',
-  'card.generate@1': 'Phase 2 — question bank',
-  'card.solve@1': 'Phase 2 — verification pipeline',
   'doubt.decompose@1': 'Phase 3 — Snap',
   'mindmap.build@1': 'Phase 4 — Map',
   'eval.judge@1': 'Phase 0.4 — eval harness',

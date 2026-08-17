@@ -1,4 +1,3 @@
-import { ObjectId } from 'mongodb';
 import { EventInputSchema, type EventInput, type StoredEvent } from '@grasp/schema';
 import { collections } from '../db/collections';
 
@@ -55,7 +54,16 @@ export async function emit(input: EventInput): Promise<EmitResult> {
   const doc = {
     seq,
     type: parsed.type,
-    userId: new ObjectId(parsed.userId),
+    /**
+     * Stored as a string, deliberately.
+     *
+     * Every learner-owned collection is read through `UserScope`, which filters
+     * on a string `userId`. Storing an ObjectId here made events invisible to
+     * every scoped query — they were written correctly and could never be read
+     * back, which would have broken replay silently. One representation, chosen
+     * to match the accessors. See packages/core/src/auth/scope.ts.
+     */
+    userId: parsed.userId,
     payload: parsed.payload,
     idempotencyKey: parsed.idempotencyKey,
     ts,
@@ -88,7 +96,7 @@ export async function emitMany(inputs: EventInput[]): Promise<EmitResult[]> {
 /** Replay source for `pnpm learner:rebuild`. Ordered by `seq`, streamed. */
 export function readEventsFrom(fromSeq: number, userId?: string) {
   const filter: Record<string, unknown> = { seq: { $gt: fromSeq } };
-  if (userId) filter.userId = new ObjectId(userId);
+  if (userId) filter.userId = userId;
   return collections.events().find(filter).sort({ seq: 1 });
 }
 

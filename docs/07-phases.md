@@ -211,35 +211,44 @@ Better Auth + Mongo adapter. Email magic link via Resend.
 
 ---
 
-## Phase 2 — Reps ☐
+## Phase 2 — Reps ◐ — **loop closed end to end**
 
 *Weeks 7–10. Goal: the loop closes. This is the phase that makes Grasp a platform.*
 
-### 2.1 Question bank ☐
+### 2.1 Question bank ◐
 
-- ☐ `card.generate` from chunks, targeting concept objectives
-- ☐ **Verification pipeline**: generate → solve twice independently → agreement
-  check → difficulty estimate → quarantine → human spot-check UI
-- ☐ Only `verified` questions are servable (enforced in the query)
-- ☐ Six card types: mcq, multi, tapError, orderSteps, numeric, label
+- ☑ `card.generate` from chunks, targeting concept objectives
+- ☑ **Verification pipeline**: structural check → two independent solves →
+      judge → persist. `pnpm cards:build`
+- ☑ Only `verified` questions are servable (enforced in the query)
+- ☑ Answer comparison handles fractions, roots, percentages, set vs sequence
+- ☐ Human spot-check UI for the quarantine queue
+- ☐ Card types beyond mcq wired into the UI
 
-### 2.2 Learner model ☐
+Observed pass rate 67%. The rejects were real: one asked "which could NOT be…",
+the trick phrasing `card.generate` explicitly forbids — verification caught the
+generator breaking its own rules.
 
-- ☐ Event handlers → mastery fold (pure, unit-tested)
-- ☐ Elo + 2-param scheduler
-- ☐ Calibration job (weekly Brier vs baselines)
+### 2.2 Learner model ☑ (calibration job pending)
+
+- ☑ Mastery fold: Elo blended with a smoothed hit rate, forgetting curve, pure
+- ☑ Latency as signal — fast+wrong discounted as a guess
+- ☑ Brier scoring against a constant baseline
+- ☐ Weekly calibration job
 - ☐ `pnpm learner:rebuild` with shadow-write + diff report
 
-### 2.3 Feed ☐
+### 2.3 Feed ◐ — **usable**
 
-- ☐ Scheduler: four pools + diversify + difficulty band + type variety
-- ☐ Pre-generate next 20 cards into Redis; top-up job
-- ☐ Vertical swipe (spring physics, snap), keyboard navigable
-- ☐ Instant feedback < 100 ms; local grading where possible
+- ☑ Scheduler: four pools + difficulty band + diversify
+- ☑ `/api/feed` — no model call on this path; answer key never leaves the server
+- ☑ `/api/attempt` — server-side grading, event append, mastery fold
+- ☑ Card UI with keyboard control (1–9 to answer, Enter to continue)
+- ☑ Verdict with worked solution and the mastery delta
+- ☑ Streak, progress rail, haptics on mobile web
+- ☐ Redis pre-generation (feed is computed per request for now)
 - ☐ Wrong answer → streamed explanation from a pre-warmed bundle
-- ☐ Streak, daily goal ring, XP, per-concept progress
-- ☐ Haptics on mobile web
-- ☐ 8-question cold-start placement, in feed format
+- ☐ Daily goal ring, XP
+- ☐ 8-question cold-start placement (`placementNext` exists and is tested)
 
 ### Gate 2 ☐
 

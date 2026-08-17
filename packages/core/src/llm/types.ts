@@ -12,6 +12,8 @@ export interface ChatRequest {
   /** JSON Schema object. Present ⇒ the provider must constrain output to it. */
   jsonSchema?: Record<string, unknown>;
   maxOutputTokens: number;
+  /** Providers that expose a reasoning budget; ignored by those that do not. */
+  reasoningEffort?: 'low' | 'medium' | 'high';
   timeoutMs: number;
   signal?: AbortSignal;
 }

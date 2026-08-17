@@ -132,11 +132,15 @@ export default async function AppHome() {
       <div className="card card-hover">
         <p className="eyebrow">Surfaces</p>
         <p style={{ marginTop: 0, color: 'var(--ink-2)' }}>
-          Auth and onboarding are done. <strong>Ask</strong> is next — retrieval, the context
-          broker, and streaming chat. Everything after that reads the profile above.
+          <strong>Ask</strong> and <strong>Reps</strong> both read the profile above — Ask to
+          pitch its explanations, Reps to decide what you practise next.
+        </p>
+        <p className="row" style={{ gap: 'var(--s3)', margin: '0 0 var(--s4)' }}>
+          <a className="btn" href="/ask" style={{ textDecoration: 'none' }}>Open Ask</a>
+          <a className="btn" href="/reps" style={{ textDecoration: 'none' }}>Open Reps</a>
         </p>
         <p className="row" style={{ gap: 'var(--s2)', margin: 0 }}>
-          {['Ask', 'Reps', 'Snap', 'Duel', 'Map', 'Slips'].map((s) => (
+          {['Snap', 'Duel', 'Map', 'Slips'].map((s) => (
             <span key={s} className="pill pill-warn">{s} — not built</span>
           ))}
         </p>

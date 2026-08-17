@@ -179,6 +179,7 @@ export async function generate<T = unknown>(args: GenerateArgs): Promise<Generat
               messages: msgs,
               jsonSchema,
               maxOutputTokens: cfg.maxOutputTokens,
+              reasoningEffort: cfg.reasoningEffort,
               timeoutMs: cfg.timeoutMs,
               signal: args.signal,
             });
