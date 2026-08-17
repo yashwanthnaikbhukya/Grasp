@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Sora, Manrope, JetBrains_Mono } from 'next/font/google';
+import { Quicksand, Nunito, DM_Mono } from 'next/font/google';
 import './globals.css';
 
 /**
@@ -11,37 +11,41 @@ import './globals.css';
  * previous system stack did none of that: `Avenir Next` exists only on Apple
  * devices, so most learners were seeing a different design.
  *
- * Three roles, deliberately paired:
+ * Rounded throughout — the whole set has soft, circular letterforms and rounded
+ * stroke terminals, which is what makes text feel gentle rather than technical.
+ * It also sits better against the glass surfaces: hard geometric corners fight
+ * blurred edges, round ones agree with them.
  *
- *   Sora          headings. Geometric with slightly squared bowls, so it holds
- *                 its shape at large sizes without turning generic.
- *   Manrope       everything read at length. Semi-rounded terminals are what
- *                 make it feel smooth rather than merely clean, and it stays
- *                 legible at 16px through a long explanation — which is most of
- *                 what this product is.
- *   JetBrains Mono numbers, concept ids, code. Tall x-height and unambiguous
- *                 0/O and 1/l/I, which matters when a learner is reading an
- *                 equation or a slug.
+ *   Quicksand   headings. Fully rounded geometric — circular bowls, soft
+ *               terminals. Kept at 600/700 because its lighter weights go
+ *               flimsy at display sizes.
+ *   Nunito      everything read at length. Rounded terminals with humanist
+ *               proportions, so it stays warm without becoming cute, and it
+ *               holds up through a long explanation — which is most of this
+ *               product.
+ *   DM Mono     numbers, concept ids, code. Softer and less mechanical than the
+ *               usual coding monos, while keeping 0/O and 1/l/I distinct — which
+ *               matters when someone is reading an equation or a slug.
  *
  * Weights are pinned to the ones actually used. Shipping the full variable range
  * of three families would be a few hundred KB for nothing.
  */
 
-const display = Sora({
+const display = Quicksand({
   subsets: ['latin'],
   weight: ['500', '600', '700'],
   variable: '--font-display-src',
   display: 'swap',
 });
 
-const body = Manrope({
+const body = Nunito({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-body-src',
   display: 'swap',
 });
 
-const mono = JetBrains_Mono({
+const mono = DM_Mono({
   subsets: ['latin'],
   weight: ['400', '500'],
   variable: '--font-mono-src',

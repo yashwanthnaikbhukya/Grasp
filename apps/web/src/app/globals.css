@@ -157,11 +157,11 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-body);
-  /* Manrope runs a touch small at 16, and this is a product people read for
-     twenty minutes at a stretch. */
+  /* Nunito has a generous x-height, so it reads larger than its point size.
+     16.5 with a roomy leading — round letterforms want air, not compression. */
   font-size: 16.5px;
-  line-height: 1.65;
-  letter-spacing: -0.005em;
+  line-height: 1.68;
+  letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -272,14 +272,15 @@ body::before {
 h1, h2, h3 {
   font-family: var(--font-display);
   font-weight: 600;
-  line-height: 1.15;
-  /* Sora is wide by default; pulling it in slightly stops large headings from
-     drifting apart. */
-  letter-spacing: -0.022em;
+  line-height: 1.22;
+  /* Only a whisper of negative tracking. Circular letterforms need their
+     counters to breathe — tightening a rounded face collapses the o's and e's
+     and undoes the softness. */
+  letter-spacing: -0.008em;
   text-wrap: balance;
   margin: 0;
 }
-h1 { letter-spacing: -0.03em; }
+h1 { font-weight: 700; letter-spacing: -0.012em; }
 
 a { color: var(--cobalt); text-underline-offset: 3px; text-decoration-thickness: 1px; }
 a:hover { color: var(--cobalt-lift); }
@@ -505,7 +506,7 @@ tbody tr:last-child td { border-bottom: none; }
 .ask-brand {
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-decoration: none;
   color: var(--ink);
   font-size: 1.05rem;
