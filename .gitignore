@@ -28,3 +28,7 @@ scratch/
 # never commit corpora or learner data
 data/corpora/
 data/exports/
+
+# build artifacts
+*.tsbuildinfo
+next-env.d.ts
