@@ -1,0 +1,227 @@
+{
+  "_comment": [
+    "STARTER GRAPH — 9 nodes, enough to prove the pipeline end to end.",
+    "",
+    "This is NOT the Phase 0 deliverable. That is 150-300 nodes covering your chosen",
+    "subject, authored from a syllabus. See docs/07-phases.md section 0.2.",
+    "",
+    "Concepts are UNIVERSAL - no board, no grade. 'pythagorean-identity' requires",
+    "'pythagoras-theorem' in every curriculum on earth, so the graph is authored once",
+    "and curricula are overlays on it (data/curricula.seed.json).",
+    "",
+    "prereqIds is the part that has to be right: it drives frontier gating (never",
+    "drill a learner on something they cannot yet do) and upstream gap detection.",
+    "Author by hand with a model as a drafting assistant - never generated unchecked.",
+    "",
+    "aliases carry every local variant (cosec/csc, trapezium/trapezoid) and feed both",
+    "retrieval recall and cross-curriculum tagging. Load-bearing, not decoration.",
+    "",
+    "stageRange is ADVISORY - stage 10 is Class 10 (IN) / Grade 10 (US) / Year 11 (GB).",
+    "It ranks and caveats; it never refuses.",
+    "",
+    "depth is computed by the loader; omit it."
+  ],
+  "subject": "mathematics",
+  "concepts": [
+    {
+      "_id": "right-triangle-basics",
+      "name": "Right triangles: sides and naming",
+      "aliases": [
+        "hypotenuse",
+        "opposite side",
+        "adjacent side"
+      ],
+      "domain": "trigonometry",
+      "prereqIds": [],
+      "description": "Identifying the hypotenuse, and the opposite and adjacent sides relative to a chosen acute angle in a right triangle.",
+      "objectives": [
+        "Name the three sides relative to a given acute angle",
+        "Recognise that opposite and adjacent swap when the reference angle changes"
+      ],
+      "stageRange": {
+        "min": 7,
+        "max": 9
+      }
+    },
+    {
+      "_id": "pythagoras-theorem",
+      "name": "Pythagoras' theorem",
+      "aliases": [
+        "pythagorean theorem",
+        "a2 + b2 = c2"
+      ],
+      "domain": "geometry",
+      "prereqIds": [
+        "right-triangle-basics"
+      ],
+      "description": "In a right triangle the square on the hypotenuse equals the sum of the squares on the other two sides.",
+      "objectives": [
+        "Find a missing side given the other two",
+        "Verify whether a triple forms a right triangle"
+      ],
+      "stageRange": {
+        "min": 8,
+        "max": 10
+      }
+    },
+    {
+      "_id": "trig-ratios",
+      "name": "Trigonometric ratios",
+      "aliases": [
+        "sine",
+        "cosine",
+        "tangent",
+        "sin cos tan",
+        "SOH CAH TOA"
+      ],
+      "domain": "trigonometry",
+      "prereqIds": [
+        "right-triangle-basics"
+      ],
+      "description": "Definitions of sin, cos and tan of an acute angle as ratios of sides in a right triangle, and the reciprocal ratios cosec, sec and cot.",
+      "objectives": [
+        "Write all six ratios for a given angle",
+        "Compute a ratio from a labelled triangle",
+        "State the reciprocal relationships"
+      ],
+      "stageRange": {
+        "min": 9,
+        "max": 11
+      }
+    },
+    {
+      "_id": "trig-ratios-standard-angles",
+      "name": "Ratios of 0, 30, 45, 60 and 90 degrees",
+      "aliases": [
+        "standard angles",
+        "special angles",
+        "trig table"
+      ],
+      "domain": "trigonometry",
+      "prereqIds": [
+        "trig-ratios"
+      ],
+      "description": "Exact values of the trigonometric ratios at the standard angles, derived from the 30-60-90 and 45-45-90 triangles rather than memorised.",
+      "objectives": [
+        "State exact values without a table",
+        "Derive the 30-60-90 values from an equilateral triangle",
+        "Evaluate expressions combining standard angles"
+      ],
+      "stageRange": {
+        "min": 9,
+        "max": 11
+      }
+    },
+    {
+      "_id": "pythagorean-identity",
+      "name": "The identity sin^2 + cos^2 = 1",
+      "aliases": [
+        "pythagorean identity",
+        "sin squared plus cos squared"
+      ],
+      "domain": "trigonometry",
+      "prereqIds": [
+        "trig-ratios",
+        "pythagoras-theorem"
+      ],
+      "description": "The first Pythagorean identity, obtained by applying Pythagoras' theorem to the ratio definitions.",
+      "objectives": [
+        "Derive the identity from Pythagoras' theorem",
+        "Use it to find one ratio given another",
+        "Recognise it inside a larger expression"
+      ],
+      "stageRange": {
+        "min": 9,
+        "max": 11
+      }
+    },
+    {
+      "_id": "trig-identities-derived",
+      "name": "Derived identities: sec, cosec, cot forms",
+      "aliases": [
+        "1 + tan^2 = sec^2",
+        "1 + cot^2 = cosec^2"
+      ],
+      "domain": "trigonometry",
+      "prereqIds": [
+        "pythagorean-identity"
+      ],
+      "description": "The second and third Pythagorean identities, obtained by dividing the first through by cos^2 and sin^2.",
+      "objectives": [
+        "Derive both from the first identity",
+        "Choose the useful identity for a given expression"
+      ],
+      "stageRange": {
+        "min": 10,
+        "max": 12
+      }
+    },
+    {
+      "_id": "trig-simplification",
+      "name": "Proving and simplifying trigonometric expressions",
+      "aliases": [
+        "prove the identity",
+        "simplify trig expression"
+      ],
+      "domain": "trigonometry",
+      "prereqIds": [
+        "trig-identities-derived",
+        "trig-ratios-standard-angles"
+      ],
+      "description": "Strategy for proving an identity: work one side only, convert to sin and cos when stuck, look for a Pythagorean form to substitute.",
+      "objectives": [
+        "Prove an identity working from one side",
+        "Recognise when to convert everything to sin and cos",
+        "Avoid the invalid move of operating across both sides"
+      ],
+      "stageRange": {
+        "min": 10,
+        "max": 12
+      }
+    },
+    {
+      "_id": "angle-of-elevation-depression",
+      "name": "Angles of elevation and depression",
+      "aliases": [
+        "height and distance",
+        "line of sight"
+      ],
+      "domain": "trigonometry",
+      "prereqIds": [
+        "trig-ratios-standard-angles"
+      ],
+      "description": "Modelling a real situation as a right triangle, distinguishing the angle of elevation from the angle of depression relative to the horizontal.",
+      "objectives": [
+        "Draw a correct diagram from a word problem",
+        "Distinguish elevation from depression",
+        "Solve single-triangle height and distance problems"
+      ],
+      "stageRange": {
+        "min": 9,
+        "max": 11
+      }
+    },
+    {
+      "_id": "heights-distances-two-triangles",
+      "name": "Height and distance with two triangles",
+      "aliases": [
+        "two observers",
+        "tower and building problems"
+      ],
+      "domain": "trigonometry",
+      "prereqIds": [
+        "angle-of-elevation-depression",
+        "trig-simplification"
+      ],
+      "description": "Problems requiring two right triangles sharing a side, solved by forming and eliminating between two equations.",
+      "objectives": [
+        "Identify the shared side between two triangles",
+        "Set up and solve the resulting simultaneous equations"
+      ],
+      "stageRange": {
+        "min": 10,
+        "max": 12
+      }
+    }
+  ]
+}

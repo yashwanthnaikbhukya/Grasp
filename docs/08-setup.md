@@ -33,10 +33,16 @@ Then:
 ```bash
 cd grasp
 pnpm install
-cp .env.example .env.local
 ```
 
-Keep `.env.local` open — you'll be pasting into it for the next twenty minutes.
+`.env.local` already exists at the **repo root** with everything pre-filled
+except four values. Open it and look for the `PASTE HERE` block at the top.
+
+> One env file, at the root, used by both the scripts and the app. Next normally
+> only reads `.env*` files sitting beside the app, which in a monorepo means the
+> app silently runs on defaults while `setup:check` reports everything fine —
+> `apps/web/next.config.mjs` loads the root file explicitly to close that gap.
+> Don't add a second `.env.local` inside `apps/web`.
 
 ---
 
@@ -285,9 +291,17 @@ fails a request because tracing failed.
 ## 7 — Verify Phase 0 · required
 
 ```bash
-pnpm setup:check     # what's wired, what isn't, and the fix for each
-pnpm models:check    # do the configured model ids actually exist on your key
+pnpm setup:check     # is the value present?
+pnpm models:check    # does the model id exist on this key?
+pnpm smoke           # does it actually work, end to end?
 ```
+
+The three answer different questions. `smoke` makes real calls with nothing
+mocked — it embeds text and checks the vectors are semantically ordered, writes
+and reads a Mongo document to prove the credential has `readWrite` (a ping only
+proves reachability), then runs the gateway twice, the second time with your
+primary provider forced down. It skips what isn't configured rather than failing,
+so it's useful from the first minute.
 
 Expected for Phase 0: Mongo ✓ and at least one provider ✓. Ollama shows under
 Phase 1 and does not block.
