@@ -1,0 +1,167 @@
+/* Grasp design tokens.
+   Cool graphite paper + cobalt pen + ochre highlighter.
+   Both themes from the first commit — retrofitting dark mode means auditing
+   every file. See docs/09-conventions.md. */
+
+:root {
+  --paper: #f6f7f9;
+  --paper-raised: #ffffff;
+  --paper-sunk: #edeff4;
+  --ink: #10151f;
+  --ink-2: #3b4453;
+  --ink-3: #626c7d;
+  --ink-4: #8d97a6;
+  --rule: #dce0e8;
+  --rule-strong: #c2c8d4;
+
+  --cobalt: #1e4cd1;
+  --cobalt-soft: #e4eafb;
+  --ochre: #a96b0b;
+  --ochre-soft: #faeeda;
+  --ok: #0f7b52;
+  --ok-soft: #dff3e9;
+  --bad: #b02a37;
+  --bad-soft: #fbe6e8;
+
+  --font-display: Charter, 'Iowan Old Style', Georgia, serif;
+  --font-body: 'Avenir Next', Avenir, 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'SF Mono', 'IBM Plex Mono', Menlo, Monaco, ui-monospace, monospace;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+  --s6: 32px; --s7: 48px; --s8: 64px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #0b0f16;
+    --paper-raised: #131924;
+    --paper-sunk: #080b11;
+    --ink: #e8ebf1;
+    --ink-2: #bac2d0;
+    --ink-3: #8e98a9;
+    --ink-4: #67717f;
+    --rule: #232b39;
+    --rule-strong: #333d4e;
+
+    --cobalt: #7fa0ff;
+    --cobalt-soft: #16203a;
+    --ochre: #e1a648;
+    --ochre-soft: #2a2011;
+    --ok: #5ed6a4;
+    --ok-soft: #0f2620;
+    --bad: #ff8b96;
+    --bad-soft: #2a1216;
+  }
+}
+
+:root[data-theme='dark'] {
+  --paper: #0b0f16;
+  --paper-raised: #131924;
+  --paper-sunk: #080b11;
+  --ink: #e8ebf1;
+  --ink-2: #bac2d0;
+  --ink-3: #8e98a9;
+  --ink-4: #67717f;
+  --rule: #232b39;
+  --rule-strong: #333d4e;
+
+  --cobalt: #7fa0ff;
+  --cobalt-soft: #16203a;
+  --ochre: #e1a648;
+  --ochre-soft: #2a2011;
+  --ok: #5ed6a4;
+  --ok-soft: #0f2620;
+  --bad: #ff8b96;
+  --bad-soft: #2a1216;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--cobalt); text-underline-offset: 2px; }
+
+code, pre { font-family: var(--font-mono); font-size: 0.86em; }
+
+pre {
+  background: var(--paper-sunk);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: var(--s4);
+  overflow-x: auto;
+}
+
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; text-wrap: balance; }
+
+.wrap { max-width: 62rem; margin: 0 auto; padding: var(--s7) var(--s5) var(--s8); }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cobalt);
+  margin: 0 0 var(--s3);
+}
+
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: var(--s5);
+  margin: var(--s4) 0;
+}
+
+.row { display: flex; gap: var(--s4); align-items: baseline; flex-wrap: wrap; }
+
+.pill {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.pill-ok   { background: var(--ok-soft);     color: var(--ok);     border: 1px solid var(--ok); }
+.pill-bad  { background: var(--bad-soft);    color: var(--bad);    border: 1px solid var(--bad); }
+.pill-warn { background: var(--ochre-soft);  color: var(--ochre);  border: 1px solid var(--ochre); }
+.pill-info { background: var(--cobalt-soft); color: var(--cobalt); border: 1px solid var(--cobalt); }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: var(--s2) var(--s4) var(--s2) 0;
+  border-bottom: 1px solid var(--rule-strong);
+}
+td {
+  padding: var(--s3) var(--s4) var(--s3) 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+  color: var(--ink-2);
+}
+td:first-child { color: var(--ink); }
+
+.muted { color: var(--ink-3); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; border-radius: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

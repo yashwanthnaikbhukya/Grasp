@@ -1,0 +1,163 @@
+import type { z } from 'zod';
+import {
+  ConceptTaggingSchema,
+  DoubtDecompositionSchema,
+  EvalJudgementSchema,
+  GeneratedCardSchema,
+  CardSolveSchema,
+  MindmapSchema,
+  QueryUnderstandingSchema,
+  SessionDigestSchema,
+  SessionTitleSchema,
+  SlipClassificationSchema,
+  type ModelTier,
+} from '@grasp/schema';
+
+/**
+ * The task registry: the single place that decides how each model call runs.
+ *
+ * Feature code names a **task**. The registry names a **tier**. Provider config
+ * maps tier → concrete model. Three levels of indirection, each earning its
+ * place:
+ *
+ *   task ('slip.classify') → tier ('best') → provider+model (gemini-2.0-flash)
+ *        what you want          how good          what actually runs
+ *
+ * See docs/04-llm-gateway.md.
+ */
+
+export interface TaskConfig {
+  tier: ModelTier;
+  /** `taskId@version` in @grasp/prompts. Bump, never edit. */
+  prompt: string;
+  /** Absent ⇒ the task streams prose and is not schema-validated. */
+  schema?: z.ZodTypeAny;
+  maxOutputTokens: number;
+  timeoutMs: number;
+  /** Deterministic, idempotent tasks only. Never a per-learner task. */
+  cache: boolean;
+}
+
+export const TASKS = {
+  // ---- Broker -------------------------------------------------------------
+  'query.understand': {
+    tier: 'fast',
+    prompt: 'query.understand@1',
+    schema: QueryUnderstandingSchema,
+    maxOutputTokens: 400,
+    timeoutMs: 8_000,
+    // Per-conversation by nature — caching would serve a stale rewrite.
+    cache: false,
+  },
+  'session.digest': {
+    tier: 'fast',
+    prompt: 'session.digest@1',
+    schema: SessionDigestSchema,
+    maxOutputTokens: 800,
+    timeoutMs: 15_000,
+    cache: false,
+  },
+  'session.title': {
+    tier: 'fast',
+    prompt: 'session.title@1',
+    schema: SessionTitleSchema,
+    maxOutputTokens: 60,
+    timeoutMs: 8_000,
+    cache: true,
+  },
+
+  // ---- Ask ----------------------------------------------------------------
+  'tutor.reply': {
+    tier: 'mid',
+    prompt: 'tutor.reply@1',
+    // No schema — streams prose to the learner.
+    maxOutputTokens: 2_000,
+    timeoutMs: 60_000,
+    cache: false,
+  },
+  'tutor.explainAnswer': {
+    tier: 'mid',
+    prompt: 'tutor.reply@1',
+    maxOutputTokens: 700,
+    timeoutMs: 30_000,
+    cache: false,
+  },
+
+  // ---- Content ------------------------------------------------------------
+  'concept.tag': {
+    tier: 'fast',
+    prompt: 'concept.tag@1',
+    schema: ConceptTaggingSchema,
+    maxOutputTokens: 300,
+    timeoutMs: 15_000,
+    // Same chunk always tags the same way — cache aggressively during ingest.
+    cache: true,
+  },
+  'card.generate': {
+    tier: 'fast',
+    prompt: 'card.generate@1',
+    schema: GeneratedCardSchema,
+    maxOutputTokens: 1_200,
+    timeoutMs: 30_000,
+    cache: false,
+  },
+  'card.solve': {
+    // The verification leg. Must be at least as capable as the generator, or
+    // verification is theatre.
+    tier: 'mid',
+    prompt: 'card.solve@1',
+    schema: CardSolveSchema,
+    maxOutputTokens: 1_200,
+    timeoutMs: 30_000,
+    cache: false,
+  },
+
+  // ---- Snap / Slips / Map --------------------------------------------------
+  'doubt.decompose': {
+    tier: 'mid',
+    prompt: 'doubt.decompose@1',
+    schema: DoubtDecompositionSchema,
+    maxOutputTokens: 2_000,
+    timeoutMs: 60_000,
+    cache: false,
+  },
+  'slip.classify': {
+    // `best` because the label is written into the learner graph and persists.
+    tier: 'best',
+    prompt: 'slip.classify@1',
+    schema: SlipClassificationSchema,
+    maxOutputTokens: 400,
+    timeoutMs: 20_000,
+    cache: false,
+  },
+  'mindmap.build': {
+    tier: 'mid',
+    prompt: 'mindmap.build@1',
+    schema: MindmapSchema,
+    maxOutputTokens: 4_000,
+    timeoutMs: 90_000,
+    cache: true,
+  },
+
+  // ---- Eval ---------------------------------------------------------------
+  'eval.judge': {
+    tier: 'best',
+    prompt: 'eval.judge@1',
+    schema: EvalJudgementSchema,
+    maxOutputTokens: 800,
+    timeoutMs: 30_000,
+    cache: false,
+  },
+} as const satisfies Record<string, TaskConfig>;
+
+export type TaskId = keyof typeof TASKS;
+
+export function taskConfig(task: TaskId): TaskConfig {
+  const cfg = TASKS[task];
+  if (!cfg) throw new Error(`Unknown task "${String(task)}"`);
+  return cfg;
+}
+
+export function listTasks(): TaskId[] {
+  return Object.keys(TASKS) as TaskId[];
+}

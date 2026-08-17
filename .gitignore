@@ -1,0 +1,30 @@
+node_modules/
+.next/
+dist/
+build/
+out/
+coverage/
+.turbo/
+
+# env
+.env
+.env.local
+.env*.local
+!.env.example
+
+# os / editor
+.DS_Store
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# local model + data scratch
+.ollama/
+tmp/
+scratch/
+*.sqlite
+
+# never commit corpora or learner data
+data/corpora/
+data/exports/
