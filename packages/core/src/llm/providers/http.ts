@@ -36,7 +36,13 @@ export async function postJson(
       const meta = { provider: opts.provider, status: res.status, body: text.slice(0, 600) };
 
       if (res.status === 429 || res.status >= 500) {
-        throw new ProviderTransientError(`${opts.provider} ${res.status}`, meta);
+        // Providers tell you how long to wait; honouring it beats guessing.
+        const retryAfter = Number(res.headers.get('retry-after') ?? '');
+        throw new ProviderTransientError(`${opts.provider} ${res.status}`, {
+          ...meta,
+          kind: res.status === 429 ? 'rate_limit' : 'server',
+          retryAfterMs: Number.isFinite(retryAfter) ? retryAfter * 1000 : undefined,
+        });
       }
       throw new ProviderRequestError(`${opts.provider} ${res.status}`, meta);
     }

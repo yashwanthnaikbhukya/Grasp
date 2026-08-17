@@ -63,6 +63,8 @@ export interface DocLlmCall extends Document {
   latencyMs: number;
   ok: boolean;
   errorKind?: string;
+  /** The provider's actual message. `errorKind` alone makes 429 vs 5xx a guess. */
+  errorMessage?: string;
   /** > 0 means the primary provider was unusable. The number to watch. */
   failoverDepth: number;
   userId?: string;

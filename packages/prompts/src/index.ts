@@ -1,4 +1,6 @@
 import type { PromptTemplate } from './types';
+import { conceptProposeV1 } from './templates/concept-propose.v1';
+import { conceptProposeV2 } from './templates/concept-propose.v2';
 import { conceptTagV1 } from './templates/concept-tag.v1';
 import { queryUnderstandV1 } from './templates/query-understand.v1';
 import { slipClassifyV1 } from './templates/slip-classify.v1';
@@ -17,6 +19,8 @@ export { str, list } from './types';
 const templates: Record<string, PromptTemplate> = {
   [queryUnderstandV1.id]: queryUnderstandV1,
   [conceptTagV1.id]: conceptTagV1,
+  [conceptProposeV1.id]: conceptProposeV1,
+  [conceptProposeV2.id]: conceptProposeV2,
   [slipClassifyV1.id]: slipClassifyV1,
   [tutorReplyV1.id]: tutorReplyV1,
 };

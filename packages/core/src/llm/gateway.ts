@@ -82,6 +82,31 @@ export interface GenerateResult<T> {
   attempts: { provider: ProviderName; error: string }[];
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * How many times to retry the *same* provider before moving down the chain.
+ *
+ * A 429 means "wait", not "this provider is broken" — and on free tiers it is the
+ * single most common response. Failing straight over burns the next provider's
+ * quota too, so a short backoff first keeps more headroom overall. A 5xx gets one
+ * retry; anything else moves on immediately.
+ */
+const SAME_PROVIDER_RETRIES = 2;
+const BASE_BACKOFF_MS = 1_200;
+
+function retryDelay(e: unknown, attempt: number): number | null {
+  if (!(e instanceof ProviderTransientError)) return null;
+  const kind = e.meta.kind;
+  if (kind !== 'rate_limit' && kind !== 'server') return null;
+  if (attempt >= SAME_PROVIDER_RETRIES) return null;
+
+  const advertised = e.meta.retryAfterMs;
+  if (typeof advertised === 'number' && advertised > 0) return Math.min(advertised, 20_000);
+  // Exponential with jitter, so parallel callers don't retry in lockstep.
+  return BASE_BACKOFF_MS * 2 ** attempt + Math.floor(Math.random() * 400);
+}
+
 function errorKind(e: unknown): string {
   if (e instanceof SchemaValidationError) return 'schema';
   if (e instanceof ProviderTransientError) return String(e.meta.kind ?? 'transient');
@@ -116,7 +141,7 @@ export async function generate<T = unknown>(args: GenerateArgs): Promise<Generat
       >)
     : undefined;
 
-  const chain = chainFor(cfg.tier);
+  const chain = chainFor(cfg.tier, cfg.excludeProviders ? [...cfg.excludeProviders] : []);
   if (chain.length === 0) {
     throw new GatewayExhaustedError(
       `No provider available for tier "${cfg.tier}". Set at least one API key — see docs/08-setup.md`,
@@ -145,15 +170,27 @@ export async function generate<T = unknown>(args: GenerateArgs): Promise<Generat
         { role: 'user', content: rendered },
       ];
 
-      let res: ChatResponse = await adapter.chat({
-        tier: cfg.tier,
-        system: template.system,
-        messages,
-        jsonSchema,
-        maxOutputTokens: cfg.maxOutputTokens,
-        timeoutMs: cfg.timeoutMs,
-        signal: args.signal,
-      });
+      const callWithBackoff = async (msgs: ChatMessage[]): Promise<ChatResponse> => {
+        for (let attempt = 0; ; attempt++) {
+          try {
+            return await adapter.chat({
+              tier: cfg.tier,
+              system: template.system,
+              messages: msgs,
+              jsonSchema,
+              maxOutputTokens: cfg.maxOutputTokens,
+              timeoutMs: cfg.timeoutMs,
+              signal: args.signal,
+            });
+          } catch (err) {
+            const wait = retryDelay(err, attempt);
+            if (wait === null) throw err;
+            await sleep(wait);
+          }
+        }
+      };
+
+      let res: ChatResponse = await callWithBackoff(messages);
 
       let data: T | undefined;
 
@@ -162,10 +199,7 @@ export async function generate<T = unknown>(args: GenerateArgs): Promise<Generat
 
         if (!parsed.ok) {
           // One repair attempt, same provider, with the validation error shown.
-          res = await adapter.chat({
-            tier: cfg.tier,
-            system: template.system,
-            messages: [
+          res = await callWithBackoff([
               ...messages,
               { role: 'assistant', content: res.text },
               {
@@ -174,12 +208,7 @@ export async function generate<T = unknown>(args: GenerateArgs): Promise<Generat
                   `That response did not match the required schema:\n${parsed.error}\n\n` +
                   `Return only corrected JSON matching the schema. No prose, no code fence.`,
               },
-            ],
-            jsonSchema,
-            maxOutputTokens: cfg.maxOutputTokens,
-            timeoutMs: cfg.timeoutMs,
-            signal: args.signal,
-          });
+          ]);
 
           const repaired = tryValidate(cfg.schema, res.text);
           if (!repaired.ok) {
@@ -241,6 +270,7 @@ export async function generate<T = unknown>(args: GenerateArgs): Promise<Generat
         latencyMs: Date.now() - started,
         ok: false,
         errorKind: kind,
+        errorMessage: message.slice(0, 300),
         failoverDepth: depth,
         userId: args.userId,
         traceId,

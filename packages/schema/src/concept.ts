@@ -50,8 +50,32 @@ export const ConceptSchema = z.object({
    */
   stageRange: StageRange.nullable().default(null),
 
-  /** Topological depth, computed by the loader. */
+  /** Topological depth, computed on write. */
   depth: z.number().int().min(0).default(0),
+
+  /**
+   * Embedding of `name + description`, used to dedupe an incoming proposal
+   * against the graph. Held in memory at read time — a few hundred nodes needs
+   * no vector index. See docs/adr/0007-llm-authored-concept-graph.md.
+   */
+  embedding: z.array(z.number()).default([]),
+
+  /** `llm` = model-proposed (the normal path). `seed` = from a bootstrap file. */
+  origin: z.enum(['llm', 'seed']).default('llm'),
+  /** What text triggered the proposal. Makes a bad node traceable. */
+  proposedFrom: z.string().max(400).default(''),
+  generatedBy: z
+    .object({ task: z.string(), promptVersion: z.string(), model: z.string() })
+    .nullable()
+    .default(null),
+
+  /**
+   * Set when dedupe landed in the uncertain band: similar to an existing concept
+   * but not similar enough to merge automatically. Surfaced by
+   * `pnpm concepts:audit` — auto-deciding these is how a graph silently splits.
+   */
+  needsReview: z.boolean().default(false),
+  reviewNote: z.string().default(''),
 });
 export type Concept = z.infer<typeof ConceptSchema>;
 

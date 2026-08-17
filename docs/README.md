@@ -26,6 +26,7 @@ ADR — not by editing history.
 - [0004 — Messages are a tree](adr/0004-messages-are-a-tree.md)
 - [0005 — Duel is a synchronized replay](adr/0005-duel-is-a-replay.md)
 - [0006 — Universal concept graph, curriculum overlays](adr/0006-curriculum-agnostic-concepts.md)
+- [0007 — The concept graph is LLM-authored and self-growing](adr/0007-llm-authored-concept-graph.md)
 
 ## Keeping these honest
 

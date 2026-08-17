@@ -12,7 +12,7 @@
 import './load-env';
 import { readFile } from 'node:fs/promises';
 import { ConceptSeedSchema } from '@grasp/schema';
-import { closeMongo, collections, env } from '@grasp/core';
+import { closeMongo, collections, embed, env, invalidateGraphCache } from '@grasp/core';
 
 const SEED_PATH = new URL('../data/concepts.seed.json', import.meta.url);
 
@@ -86,9 +86,25 @@ const depths = computeDepths();
 
 // ---- Write ---------------------------------------------------------------
 
+/**
+ * Embed every seeded concept.
+ *
+ * Non-optional: a concept row with no embedding is invisible to the dedupe scan
+ * in concepts/resolve.ts, so the resolver will happily create a duplicate of it.
+ * That silently splits a learner's mastery across two ids, which is the exact
+ * failure docs/adr/0007-llm-authored-concept-graph.md exists to prevent.
+ */
+console.log(`${DIM}embedding ${seed.concepts.length} concepts…${OFF}`);
+const vectors = (
+  await embed({
+    texts: seed.concepts.map((c) => `${c.name}. ${c.description ?? ''}`),
+    purpose: 'chunk',
+  })
+).vectors;
+
 // Concepts are universal — no board, no grade. Curricula are overlays.
 // See docs/adr/0006-curriculum-agnostic-concepts.md.
-const ops = seed.concepts.map((c) => ({
+const ops = seed.concepts.map((c, i) => ({
   updateOne: {
     filter: { _id: c._id },
     update: {
@@ -96,6 +112,8 @@ const ops = seed.concepts.map((c) => ({
         ...c,
         subject: c.subject ?? seed.subject,
         depth: c.depth ?? depths.get(c._id) ?? 0,
+        embedding: vectors[i] ?? [],
+        origin: 'seed',
       },
     },
     upsert: true,
@@ -124,4 +142,5 @@ if (seed.concepts.length < 100) {
   );
 }
 
+invalidateGraphCache();
 await closeMongo();

@@ -23,24 +23,39 @@ Pick one coherent secondary-mathematics curriculum. Retrieval quality is a
 function of corpus coherence, and the concept graph you author for it is mostly
 reusable for every other maths curriculum.
 
-### 0.2 Author the universal concept graph ☐
+### 0.2 Concept graph ☑ mechanism · ◐ quality
 
-150–300 nodes with `prereqIds`. **Curriculum-free** — no board, no grade. Two
-days of work by hand from a syllabus, using a model as a drafting assistant —
-**not** fully generated, because the prerequisite edges are the part that has to
-be right and the part models get wrong.
+**Nothing is hand-authored.** The model proposes concepts from ingested text; the
+resolver dedupes against the existing graph and persists new nodes under stable
+ids. See [ADR 0007](adr/0007-llm-authored-concept-graph.md).
 
-This is the artifact that pays for itself for the rest of the project, and now
-across every curriculum you ever add: it drives retrieval, frontier gating, gap
-detection, and Map. The second curriculum is a `curricula` row plus mappings.
+```bash
+pnpm concepts:grow --demo      # watch it decide, on sample passages
+pnpm concepts:grow "<text>"    # or on your own
+pnpm concepts:calibrate        # measured cosine separation, not guessed
+pnpm concepts:reset            # drop llm-origin nodes, keep seeds
+```
 
-Take `aliases` seriously. They carry every local variant (`cosec` / `csc`,
-`trapezium` / `trapezoid`) and feed both retrieval recall and cross-curriculum
-tagging. They are load-bearing, not decoration.
+- ☑ `concept.propose` task + prompt (`@2` tightens naming and granularity)
+- ☑ Resolver: bidirectional alias match → cosine → merge / review / create
+- ☑ Within-batch prerequisite linking, cycle rejection, depth computation
+- ☑ Review band: near-misses are flagged (`needsReview`), never silently decided
+- ☑ No local-model fallback for graph writes — a weak model's plausible garbage
+      persists, and this is a background job, so failing and retrying is free
+- ☐ **Golden set for resolution** — given a passage, does it land on the right
+      existing concept? Until this exists, graph quality is unmeasured
+- ☐ Model tiebreaker for the review band ("are these the same concept?")
+- ☐ `pnpm concepts:audit` review surface
 
-Seed files: `data/concepts.seed.json` (universal) and `data/curricula.seed.json`
-(overlays, ~22 curricula across 15 regions already committed).
-Loader: `pnpm db:seed`.
+`data/concepts.seed.json` is now an optional bootstrap, not a deliverable. An
+empty graph is a valid starting state — the first ingestion run populates it.
+
+> **Observed on a real run:** the mechanism holds — a quadratic-equations passage
+> produced `completing-the-square → quadratic-formula → discriminant-and-nature-of-roots`
+> with correct depths, and aliases including `shreedharacharya formula`. But a
+> sine/cosine passage proposed `definition-of-sine-and-cosine` at 0.855 against
+> the existing `trig-ratios` — landing in the review band rather than merging.
+> The safety net worked; the judgement needs the golden set above.
 
 ### 0.3 Infrastructure ☑
 

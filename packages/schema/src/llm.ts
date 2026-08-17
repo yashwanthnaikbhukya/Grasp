@@ -74,6 +74,41 @@ export const CardSolveSchema = z.object({
 });
 export type CardSolve = z.infer<typeof CardSolveSchema>;
 
+/**
+ * `concept.propose` — the model authoring a graph node it has just decided is
+ * missing. See docs/adr/0007-llm-authored-concept-graph.md.
+ *
+ * Prerequisites come back as **names, not ids**: the model cannot know our slugs,
+ * so each name is resolved through the same dedupe path recursively.
+ */
+export const ConceptProposalSchema = z.object({
+  concepts: z
+    .array(
+      z.object({
+        /** Canonical international-English name. Not a curriculum's local label. */
+        name: z.string().min(2).max(120),
+        /** Local and colloquial variants — these carry the dedupe fast path. */
+        aliases: z.array(z.string()).max(10).default([]),
+        subject: z.string().min(2),
+        /** Broad universal grouping, e.g. `trigonometry`. Not a chapter number. */
+        domain: z.string().default(''),
+        description: z.string().min(10).max(600),
+        objectives: z.array(z.string()).max(6).default([]),
+        /** Typical band on the normalized ladder. Advisory only. */
+        stageMin: z.number().int().min(1).max(14),
+        stageMax: z.number().int().min(1).max(14),
+        /**
+         * Immediate prerequisites, by name. Only genuine hard dependencies —
+         * things a learner must already hold to make sense of this at all.
+         */
+        prerequisiteNames: z.array(z.string().min(2).max(120)).max(5).default([]),
+      }),
+    )
+    .min(1)
+    .max(6),
+});
+export type ConceptProposal = z.infer<typeof ConceptProposalSchema>;
+
 /** `session.title` — runs after turn 2. */
 export const SessionTitleSchema = z.object({
   title: z.string().min(1).max(60),

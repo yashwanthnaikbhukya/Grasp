@@ -1,5 +1,7 @@
 import type { z } from 'zod';
+import type { ProviderName } from '@grasp/schema';
 import {
+  ConceptProposalSchema,
   ConceptTaggingSchema,
   DoubtDecompositionSchema,
   EvalJudgementSchema,
@@ -36,6 +38,14 @@ export interface TaskConfig {
   timeoutMs: number;
   /** Deterministic, idempotent tasks only. Never a per-learner task. */
   cache: boolean;
+  /**
+   * Providers this task must never fall back to.
+   *
+   * For tasks that write durable structure, a weak model producing plausible
+   * garbage is worse than an outright failure — the garbage persists and corrupts
+   * every learner who touches it, while a failure just retries.
+   */
+  excludeProviders?: readonly ProviderName[];
 }
 
 export const TASKS = {
@@ -92,6 +102,29 @@ export const TASKS = {
     timeoutMs: 15_000,
     // Same chunk always tags the same way — cache aggressively during ingest.
     cache: true,
+  },
+  /**
+   * The model authoring graph nodes. `mid` rather than `fast`: a duplicate or a
+   * bad prerequisite edge persists in the graph and corrupts every learner who
+   * touches that concept afterwards. Runs in a background job, so latency is
+   * not a constraint — quality is.
+   * See docs/adr/0007-llm-authored-concept-graph.md.
+   */
+  'concept.propose': {
+    tier: 'mid',
+    prompt: 'concept.propose@2',
+    schema: ConceptProposalSchema,
+    maxOutputTokens: 2_000,
+    timeoutMs: 45_000,
+    // Same passage → same proposal. Cheap win during a long ingest.
+    cache: true,
+    /**
+     * No local leg. Observed: both hosted providers rate-limited, the call fell
+     * through to llama3.2, and it echoed the supplied catalogue back as new
+     * proposals — creating four duplicate nodes. Those persist. This is a
+     * background job, so failing and retrying costs nothing.
+     */
+    excludeProviders: ['ollama'],
   },
   'card.generate': {
     tier: 'fast',

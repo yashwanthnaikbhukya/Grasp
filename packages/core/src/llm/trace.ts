@@ -21,6 +21,8 @@ export interface TraceRecord {
   latencyMs: number;
   ok: boolean;
   errorKind?: string;
+  /** Provider's message, truncated. Without it, debugging 'transient' is guesswork. */
+  errorMessage?: string;
   /**
    * How many providers had to be skipped. A rising average means the primary
    * free tier is saturated — a signal available nowhere else.
@@ -52,7 +54,7 @@ export async function trace(rec: TraceRecord): Promise<void> {
 
   if (!env.langfuse.publicKey || !env.langfuse.secretKey) {
     // No Langfuse configured — one structured stdout line instead.
-    const flag = rec.ok ? 'ok' : `ERR(${rec.errorKind ?? 'unknown'})`;
+    const flag = rec.ok ? 'ok' : `ERR(${rec.errorKind ?? 'unknown'}${rec.errorMessage ? `: ${rec.errorMessage.slice(0, 70)}` : ''})`;
     const fo = rec.failoverDepth > 0 ? ` failover=${rec.failoverDepth}` : '';
     // eslint-disable-next-line no-console
     console.log(
