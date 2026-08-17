@@ -56,10 +56,13 @@
   --wash-2: rgba(200, 135, 27, 0.1);
   --wash-3: rgba(80, 130, 220, 0.11);
 
-  /* --- type -------------------------------------------------------------- */
-  --font-display: Charter, 'Iowan Old Style', Georgia, serif;
-  --font-body: 'Avenir Next', Avenir, 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --font-mono: 'SF Mono', 'IBM Plex Mono', Menlo, Monaco, ui-monospace, monospace;
+  /* --- type ---------------------------------------------------------------
+     Self-hosted by next/font (see layout.tsx). The stacks after each variable
+     are the fallback while the font file loads, chosen so metrics are close and
+     the swap is barely visible.                                                */
+  --font-display: var(--font-display-src), 'Segoe UI', system-ui, sans-serif;
+  --font-body: var(--font-body-src), 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-mono-src), 'SF Mono', Menlo, ui-monospace, monospace;
 
   /* --- rhythm ------------------------------------------------------------ */
   --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px; --s5: 24px;
@@ -154,10 +157,17 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 16px;
-  line-height: 1.62;
+  /* Manrope runs a touch small at 16, and this is a product people read for
+     twenty minutes at a stretch. */
+  font-size: 16.5px;
+  line-height: 1.65;
+  letter-spacing: -0.005em;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Contextual alternates smooth the joins; lining tabular figures keep numbers
+     in tables and mastery scores from jittering as they update. */
+  font-feature-settings: 'calt' 1, 'liga' 1;
   min-height: 100%;
 }
 
@@ -261,11 +271,15 @@ body::before {
 
 h1, h2, h3 {
   font-family: var(--font-display);
-  line-height: 1.16;
-  letter-spacing: -0.012em;
+  font-weight: 600;
+  line-height: 1.15;
+  /* Sora is wide by default; pulling it in slightly stops large headings from
+     drifting apart. */
+  letter-spacing: -0.022em;
   text-wrap: balance;
   margin: 0;
 }
+h1 { letter-spacing: -0.03em; }
 
 a { color: var(--cobalt); text-underline-offset: 3px; text-decoration-thickness: 1px; }
 a:hover { color: var(--cobalt-lift); }
@@ -290,7 +304,12 @@ pre {
   margin: 0 0 var(--s3);
 }
 .muted { color: var(--ink-3); }
-.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums lining;
+  letter-spacing: -0.01em;
+}
+td, th, .pill, .eyebrow { font-variant-numeric: tabular-nums; }
 
 /* =============================================================================
    Layout + surfaces
@@ -486,7 +505,7 @@ tbody tr:last-child td { border-bottom: none; }
 .ask-brand {
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-decoration: none;
   color: var(--ink);
   font-size: 1.05rem;
