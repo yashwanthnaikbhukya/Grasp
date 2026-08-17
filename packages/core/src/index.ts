@@ -18,3 +18,4 @@ export * from './concepts/index';
 export * from './auth/index';
 export * from './ingest/index';
 export * from './retrieval/index';
+export * from './context/index';
