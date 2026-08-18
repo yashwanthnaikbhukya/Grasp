@@ -138,9 +138,10 @@ export default async function AppHome() {
         <p className="row" style={{ gap: 'var(--s3)', margin: '0 0 var(--s4)' }}>
           <a className="btn" href="/ask" style={{ textDecoration: 'none' }}>Open Ask</a>
           <a className="btn" href="/reps" style={{ textDecoration: 'none' }}>Open Reps</a>
+          <a className="btn btn-ghost" href="/slips" style={{ textDecoration: 'none' }}>Slips</a>
         </p>
         <p className="row" style={{ gap: 'var(--s2)', margin: 0 }}>
-          {['Snap', 'Duel', 'Map', 'Slips'].map((s) => (
+          {['Snap', 'Duel', 'Map'].map((s) => (
             <span key={s} className="pill pill-warn">{s} — not built</span>
           ))}
         </p>

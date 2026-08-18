@@ -72,6 +72,10 @@ export function RepsFeed({ learnerName }: { learnerName: string }) {
         answer: optionId,
         latencyMs: Date.now() - shownAt.current,
         hintsUsed: 0,
+        // Position is the fatigue signal — a late-session failure on a concept
+        // they usually hold reads as time pressure, not as not knowing it.
+        positionInSession: index,
+        sessionLength: cards.length,
       }),
     });
 

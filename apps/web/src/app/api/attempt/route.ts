@@ -8,6 +8,7 @@ import {
   idempotencyKey,
   initialMastery,
   oid,
+  recordSlip,
   updateMastery,
 } from '@grasp/core';
 import { getSession } from '@/lib/session';
@@ -30,7 +31,14 @@ export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'not signed in' }, { status: 401 });
 
-  let body: { questionId?: string; answer?: unknown; latencyMs?: number; hintsUsed?: number };
+  let body: {
+    questionId?: string;
+    answer?: unknown;
+    latencyMs?: number;
+    hintsUsed?: number;
+    positionInSession?: number;
+    sessionLength?: number;
+  };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -148,6 +156,30 @@ export async function POST(req: Request) {
     );
 
     updated.push({ conceptId, p: next.p, state: next.state });
+  }
+
+  // --- 3. classify the mistake ------------------------------------------
+  //
+  // Deliberately not awaited. The learner already has their answer, and a slip
+  // label is worth nothing if it costs a second of feedback latency. Runs after
+  // the mastery fold so the classifier sees the updated prerequisite picture.
+  if (!correct) {
+    void recordSlip({
+      userId: session.userId,
+      attemptId: String(attemptDoc.insertedId),
+      questionId: String(questionId),
+      conceptIds,
+      stem: String(question.stem),
+      correctAnswer: key,
+      studentAnswer: body.answer,
+      latencyMs,
+      hintsUsed,
+      positionInSession: Number(body.positionInSession ?? 0),
+      sessionLength: Number(body.sessionLength ?? 1),
+    }).catch((e: unknown) => {
+      // A missing label degrades the digest; it must never break practice.
+      console.error('[attempt] slip classification failed', e);
+    });
   }
 
   return NextResponse.json({

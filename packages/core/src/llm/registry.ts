@@ -178,7 +178,7 @@ export const TASKS = {
   'slip.classify': {
     // `best` because the label is written into the learner graph and persists.
     tier: 'best',
-    prompt: 'slip.classify@1',
+    prompt: 'slip.classify@2',
     schema: SlipClassificationSchema,
     maxOutputTokens: 2_000,
     timeoutMs: 20_000,

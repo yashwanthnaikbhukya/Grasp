@@ -6,6 +6,7 @@ import { conceptProposeV2 } from './templates/concept-propose.v2';
 import { conceptTagV1 } from './templates/concept-tag.v1';
 import { queryUnderstandV1 } from './templates/query-understand.v1';
 import { slipClassifyV1 } from './templates/slip-classify.v1';
+import { slipClassifyV2 } from './templates/slip-classify.v2';
 import { tutorReplyV1 } from './templates/tutor-reply.v1';
 
 export type { PromptTemplate } from './types';
@@ -26,6 +27,7 @@ const templates: Record<string, PromptTemplate> = {
   [cardSolveV1.id]: cardSolveV1,
   [conceptProposeV2.id]: conceptProposeV2,
   [slipClassifyV1.id]: slipClassifyV1,
+  [slipClassifyV2.id]: slipClassifyV2,
   [tutorReplyV1.id]: tutorReplyV1,
 };
 
