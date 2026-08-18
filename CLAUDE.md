@@ -56,16 +56,22 @@ Decisions that are settled (do not relitigate without an ADR):
 11. **Concepts are universal; curricula are overlays.** A concept never carries a
    board. `stageRange` is advisory — it ranks and caveats, it never refuses. A
    learner reaching ahead of their syllabus is the best signal they can send.
-12. **Nothing about the curriculum is hand-authored.** The model proposes concepts;
+12. **Normalise a foreign id the moment it crosses into Grasp.** Everything here
+   stores ids as **strings**; Mongo `_id` and third-party libraries hand back
+   `ObjectId`s. A mismatch never throws — the query just matches nothing — so it
+   surfaces far from the cause. This has cost real debugging time four separate
+   times: feed hydration, event `userId`, slip lookup, and the Better Auth id.
+   Use `oid()` to go string → ObjectId, `String()` to come back.
+13. **Nothing about the curriculum is hand-authored.** The model proposes concepts;
    the resolver dedupes and persists them. But concept **ids must be stable** —
    free-form tags cannot accumulate mastery, because two providers won't agree on
    a slug and the learner ends up with two half-filled rows for one concept. Always
    go through `resolveExisting` / `resolveOrCreate`, never tag with raw model output.
    ([ADR 0007](docs/adr/0007-llm-authored-concept-graph.md))
-13. **A concept row with no embedding is invisible to dedupe.** Any path that writes
+14. **A concept row with no embedding is invisible to dedupe.** Any path that writes
    a concept must embed it, or the resolver will duplicate it later. This has
    already bitten once.
-14. **Tasks that write durable structure get no weak fallback.** `concept.propose`
+15. **Tasks that write durable structure get no weak fallback.** `concept.propose`
    excludes `ollama`: a small model's plausible garbage persists and corrupts every
    learner who touches that node, while a failure just retries.
 

@@ -76,16 +76,32 @@ export function getAuth(): ReturnType<typeof build> {
  * onboarding should not leave a half-built profile behind, and creating it on
  * first use keeps registration fast and failure-free.
  */
-export async function ensureLearnerRecord(authUserId: string, email: string, name: string) {
+export async function ensureLearnerRecord(rawAuthId: unknown, email: string, name: string) {
   const { ObjectId } = await import('mongodb');
   const { collections } = await import('../db/collections');
 
-  const _id = new ObjectId(authUserId.length === 24 ? authUserId : undefined);
+  /**
+   * Coerce the auth id to a string at the boundary.
+   *
+   * Better Auth's Mongo adapter hands back `user.id` as an **ObjectId**, not a
+   * hex string, so a lookup on the stored string field silently matched nothing
+   * and every request tried to create the learner record again — surfacing as a
+   * duplicate-key error on `email` rather than anything resembling the cause.
+   *
+   * The project stores ids as strings everywhere (see auth/scope.ts), so the
+   * conversion belongs here, once, rather than at each call site. This is the
+   * fourth time a string/ObjectId mismatch has cost real debugging time; the
+   * rule is that a foreign id is normalised the moment it crosses into Grasp.
+   */
+  const { toIdString } = await import('../db/oid');
+  const authUserId = toIdString(rawAuthId);
+  if (!authUserId) throw new Error('ensureLearnerRecord called without a usable auth id');
+
   const existing = await collections.users().findOne({ authId: authUserId } as never);
   if (existing) return existing;
 
   const doc = {
-    _id,
+    _id: new ObjectId(authUserId.length === 24 ? authUserId : undefined),
     authId: authUserId,
     email,
     name,
@@ -96,8 +112,31 @@ export async function ensureLearnerRecord(authUserId: string, email: string, nam
     createdAt: new Date(),
   };
 
-  await collections.users().insertOne(doc as never);
-  return doc;
+  try {
+    await collections.users().insertOne(doc as never);
+    return doc;
+  } catch (e) {
+    /**
+     * Lost the race.
+     *
+     * The first authenticated page load fans out into several concurrent
+     * requests — the page, its data routes — and each one calls this. All of
+     * them find no record and all of them insert. The unique index on `email`
+     * catches it, which is the index doing its job; the caller just needs the
+     * winner's document rather than an error.
+     */
+    if (isDuplicateKey(e)) {
+      const winner = await collections.users().findOne({ authId: authUserId } as never);
+      if (winner) return winner;
+    }
+    throw e;
+  }
+}
+
+function isDuplicateKey(e: unknown): boolean {
+  return (
+    typeof e === 'object' && e !== null && 'code' in e && (e as { code?: unknown }).code === 11000
+  );
 }
 
 /**

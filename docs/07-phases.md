@@ -261,7 +261,7 @@ constant, the personalization is theatre and no amount of UI fixes it.
 
 ---
 
-## Phase 3 — Snap + Slips ☐
+## Phase 3 — Snap + Slips ◐
 
 *Weeks 11–13. Goal: prove the thesis — a doubt becomes tomorrow's practice.*
 
@@ -270,9 +270,10 @@ constant, the personalization is theatre and no amount of UI fixes it.
   pauses and asks *what next?*
 - ☐ Auto concept-tag the doubt → feeds tomorrow's weak pool
 - ☐ Math answer equivalence via `sympy` (`1/2` = `0.5` = `2⁻¹`)
-- ☐ Slips: `slip.classify` over wrong attempts, fixed taxonomy
+- ☑ Slips: signal prior reconciled with `slip.classify@2`, fixed taxonomy
+- ☑ Mistake notebook UI, filterable by root cause, with the dominant pattern named
+- ☑ Low-confidence labels withheld from the learner, count surfaced
 - ☐ Weekly Error-DNA digest
-- ☐ Mistake notebook UI, filterable by root cause
 
 ### Gate 3 ☐
 
@@ -282,7 +283,7 @@ constant, the personalization is theatre and no amount of UI fixes it.
 
 ---
 
-## Phase 4 — Duel + Map ☐
+## Phase 4 — Duel + Map ◐
 
 *Weeks 14–16. Goal: retention and legibility.*
 
@@ -300,10 +301,16 @@ synchronized replay, not a game server.
 - ☐ **Ghost duel** — same phase, not later
 - ☐ Post-duel breakdown, rematch, shareable OG result card
 
-### 4.2 Map ☐
+### 4.2 Map ◐
 
-- ☐ Concept DAG with mastery heat (React Flow + elk/dagre)
-- ☐ Node actions: explain / drill / prerequisites / weakest chain
+- ☑ Concept DAG with mastery heat — hand-rolled layered layout, no graph library
+- ☑ Deterministic and stable under input reordering (spatial memory matters)
+- ☑ Barycentre ordering to reduce edge crossings
+- ☑ Critical edges: a weak prerequisite under something being attempted
+- ☑ **Weakest chain** — "fix this first", the most useful thing the map can say
+- ☑ Node actions: practise / ask about it / see prerequisites
+- ☐ Mindmap generation from a document or session
+- ☐ Export
 - ☐ Mindmap generation from doc, session, or concept — **typed edges**, schema-validated
 - ☐ Expand-on-demand child generation
 - ☐ Mastery overlay on mindmaps

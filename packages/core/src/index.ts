@@ -22,3 +22,4 @@ export * from './context/index';
 export * from './learner/index';
 export * from './questions/index';
 export * from './slips/index';
+export * from './map/index';

@@ -26,6 +26,7 @@ export async function getSession(): Promise<Session | null> {
   const raw = await getAuth().api.getSession({ headers: await headers() });
   if (!raw?.user) return null;
 
+  // `raw.user.id` is an ObjectId from Better Auth's Mongo adapter, not a string.
   const learner = await ensureLearnerRecord(raw.user.id, raw.user.email, raw.user.name ?? '');
   const profile = (learner as { profile?: LearnerProfile }).profile;
 
