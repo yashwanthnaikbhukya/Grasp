@@ -358,12 +358,18 @@ Full write-up: [test-reports/2026-11-09.md](test-reports/2026-11-09.md).
       no package imports the app, no `grade` field (rule 10). Proven to fail on a
       planted violation
 - ☑ **CI** — `.github/workflows/ci.yml`: frozen install, typecheck, both lints,
-      unit tests on every PR and push to `main`. Runs on GitHub
+      unit tests and the **production build** on every PR and push to `main`.
+      The build step (added 2026-11-09) needs no secrets: building without the
+      env file failed until the auth route stopped creating Better Auth at
+      import. Runs on GitHub
       (`yashwanthnaikbhukya/Grasp`, public) since 2026-11-09 — first run green in
       33 s. The `eval` job skips until `GEMINI_API_KEY` / `GROQ_API_KEY` are
       added as repository secrets
 - ☐ `pnpm eval --compare=main` in CI (after 0.4)
-- ☐ Tests for `verifyCitations`
+- ☑ Tests for `verifyCitations` (2026-11-09). Writing them showed grouped
+      markers (`[c3, c6]`) were never counted, and gpt-oss writes `【c1】`, which
+      showed as raw text. One `normalizeCitations` (`@grasp/schema/citations`)
+      now feeds the renderer, read-aloud, verification, evals and the saved text
 - ☐ Move the feed's candidate selection and the map's depth/blocker logic out of
       `apps/web` into core (the last business logic in a surface)
 

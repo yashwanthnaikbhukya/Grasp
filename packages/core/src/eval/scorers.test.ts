@@ -78,6 +78,9 @@ describe('tutor checks', () => {
   it('sees the final check question past citations and formatting', () => {
     expect(endsWithQuestion('So $\\sin 30° = 1/2$. **What is $\\cos 60°$?** [c2]')).toBe(true);
     expect(endsWithQuestion('That is the full proof.')).toBe(false);
+    // Other models' marker styles and grouped markers are citations too.
+    expect(endsWithQuestion('What is $\\cos 60°$? 【c2】')).toBe(true);
+    expect(endsWithQuestion('What is $\\cos 60°$? [c2, c3]')).toBe(true);
   });
 
   it('flags a repeated question and too many questions', () => {

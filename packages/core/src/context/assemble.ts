@@ -1,4 +1,4 @@
-import type { ContextBundle, Intent, LearnerProfile, QueryUnderstanding } from '@grasp/schema';
+import { citedIds, type ContextBundle, type Intent, type LearnerProfile, type QueryUnderstanding } from '@grasp/schema';
 import { collections } from '../db/collections';
 import { generate } from '../llm/gateway';
 import { knownConceptIds, loadGraph } from '../concepts/resolve';
@@ -272,8 +272,9 @@ export function verifyCitations(
   text: string,
   citeMap: Record<string, string>,
 ): { cited: string[]; fabricated: string[]; ungrounded: boolean } {
-  const found = [...text.matchAll(/\[(c\d+)\]/g)].map((m) => m[1] ?? '');
-  const unique = [...new Set(found)];
+  // Grouped (`[c3, c6]`) and other models' marker styles (`【c1】`) count too —
+  // reading only `[c1]` once missed real citations and flagged grounded answers.
+  const unique = [...new Set(citedIds(text))];
 
   const cited = unique.filter((id) => id in citeMap);
   const fabricated = unique.filter((id) => !(id in citeMap));

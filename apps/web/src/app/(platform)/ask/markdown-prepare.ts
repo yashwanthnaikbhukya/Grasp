@@ -1,3 +1,5 @@
+import { normalizeCitations } from '@grasp/schema/citations';
+
 /**
  * Text preparation for the Markdown renderer — pure, so it is unit-tested
  * (markdown-prepare.test.ts) apart from React.
@@ -53,7 +55,8 @@ function uprightFunctionNames(text: string): string {
 }
 
 export function prepare(text: string, streaming: boolean): string {
-  let t = text
+  // `【c1】` → `[c1]` first: streamed text has not been through the server's pass.
+  let t = normalizeCitations(text)
     // remark-math reads dollar delimiters only.
     .replace(/\\\[([\s\S]+?)\\\]/g, (_, m: string) => `\n$$\n${m.trim()}\n$$\n`)
     .replace(/\\\(([\s\S]+?)\\\)/g, (_, m: string) => `$${m.trim()}$`);

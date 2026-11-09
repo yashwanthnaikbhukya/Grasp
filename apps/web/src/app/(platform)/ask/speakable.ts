@@ -8,6 +8,8 @@
  * (citation markers, diagrams), and leaves the rest to the voice.
  */
 
+import { normalizeCitations } from '@grasp/schema/citations';
+
 const SYMBOLS: [RegExp, string][] = [
   [/\\(?:d|t)?frac\{([^{}]+)\}\{([^{}]+)\}/g, ' $1 over $2 '],
   [/\\sqrt\{([^{}]+)\}/g, ' the square root of $1 '],
@@ -48,11 +50,11 @@ function speakMath(tex: string): string {
 
 export function toSpeech(markdown: string): string {
   return (
-    markdown
+    normalizeCitations(markdown)
       // Diagrams have no spoken form; code is not read symbol by symbol.
       .replace(/```plot[\s\S]*?(```|$)/g, ' (There is a diagram here.) ')
       .replace(/```[\s\S]*?(```|$)/g, ' ')
-      .replace(/\[c\d+\](\([^)]*\))?/g, '')
+      .replace(/\[c\d+(?:\s*,\s*c\d+)*\](\([^)]*\))?/g, '')
       .replace(/\$\$([\s\S]+?)\$\$/g, (_, m: string) => `. ${speakMath(m)}. `)
       .replace(/\$([^$\n]+?)\$/g, (_, m: string) => speakMath(m))
       .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')

@@ -4,12 +4,15 @@ import { getAuth } from '@grasp/core';
 /**
  * Better Auth's own endpoints: sign-up, sign-in, sign-out, session, etc.
  *
- * `getAuth()` is lazy so importing this route never opens a Mongo connection at
- * build time — Next evaluates route modules while collecting page data.
+ * The handler is built on the first request, never at import. Next evaluates
+ * route modules while collecting page data, and `getAuth()` needs MONGODB_URI
+ * and AUTH_SECRET — calling it at module level made `next build` fail wherever
+ * those are not set (CI). Found by building without the env file, 2026-11-09.
  */
 export const dynamic = 'force-dynamic';
 
-const handler = toNextJsHandler(getAuth());
+let handler: ReturnType<typeof toNextJsHandler> | undefined;
+const auth = () => (handler ??= toNextJsHandler(getAuth()));
 
-export const GET = handler.GET;
-export const POST = handler.POST;
+export const GET = (req: Request) => auth().GET(req);
+export const POST = (req: Request) => auth().POST(req);

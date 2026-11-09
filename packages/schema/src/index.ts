@@ -9,6 +9,7 @@ export * from './learner';
 export * from './event';
 export * from './attachments';
 export * from './chat';
+export * from './citations';
 export * from './llm';
 export * from './api';
 export * from './viz';

@@ -1,11 +1,12 @@
-import type {
-  CardSolve,
-  CardSolveExpect,
-  QueryUnderstanding,
-  QueryUnderstandExpect,
-  SlipClassification,
-  SlipExpect,
-  TutorExpect,
+import {
+  normalizeCitations,
+  type CardSolve,
+  type CardSolveExpect,
+  type QueryUnderstanding,
+  type QueryUnderstandExpect,
+  type SlipClassification,
+  type SlipExpect,
+  type TutorExpect,
 } from '@grasp/schema';
 import { answersAgree } from '../questions/verify';
 
@@ -80,9 +81,9 @@ export function countQuestions(text: string): number {
 
 /** Does the message end on a question (ignoring trailing citation markers and whitespace)? */
 export function endsWithQuestion(text: string): boolean {
-  const t = text
+  const t = normalizeCitations(text)
     .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/(\s*\[c\d+\])+\s*$/g, '')
+    .replace(/(\s*\[c\d+(?:\s*,\s*c\d+)*\])+\s*$/g, '')
     .trimEnd()
     .replace(/[*_)\]]+$/g, '');
   return t.endsWith('?');

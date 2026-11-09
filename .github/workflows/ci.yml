@@ -1,7 +1,7 @@
 # CI — every pull request and every push to main (docs/07-phases.md § H.5).
 #
-# Typecheck, lint, the hard-rule boundary check, and the unit tests. None of
-# these need secrets: unit tests never touch Atlas or a model provider
+# Typecheck, lint, the hard-rule boundary check, the unit tests and the
+# production build. None of these need secrets: unit tests never touch Atlas or a model provider
 # (integration tests opt in via *.integration.test.ts and are excluded here).
 name: ci
 
@@ -42,6 +42,13 @@ jobs:
 
       - name: Unit tests
         run: pnpm test
+
+      # The production build. Typecheck and tests can pass while `next build`
+      # fails (server/client boundaries, prerendering, bundling), and until
+      # 2026-11-09 nothing ran it. No secrets needed: the env is read at request
+      # time, not at build time.
+      - name: Production build
+        run: pnpm build
 
   # Model-quality gate (docs/09-conventions.md — Evals): golden sets through the
   # real gateway, judged on a different provider, compared with the committed

@@ -13,7 +13,13 @@ import {
   type TaskId,
   type TurnAttachment,
 } from '@grasp/core';
-import { ChatRequestSchema, type AnswerSource, type AttachmentKind, type ChatMode } from '@grasp/schema';
+import {
+  ChatRequestSchema,
+  normalizeCitations,
+  type AnswerSource,
+  type AttachmentKind,
+  type ChatMode,
+} from '@grasp/schema';
 import { getSession } from '@/lib/session';
 import { badRequest } from '@/lib/http';
 
@@ -324,6 +330,10 @@ export async function POST(req: Request) {
             send('error', { message: chunk.error });
           }
         }
+
+        // Saved in Grasp's marker style whatever the provider wrote (`【c1】` →
+        // `[c1]`), so history, evals and a reload all read one form.
+        answer = normalizeCitations(answer);
 
         // --- citation verification: the hallucination metric ---------------
         const check = verifyCitations(answer, bundle.citeMap);

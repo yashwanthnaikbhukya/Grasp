@@ -13,6 +13,10 @@ describe('toSpeech — tutor text a voice can read', () => {
     expect(out).toBe('True. (There is a diagram here.) Bold and code');
   });
 
+  it('drops grouped and other-style citation markers too', () => {
+    expect(toSpeech('True 【c1】 and [c3, c6].')).toBe('True and.');
+  });
+
   it('turns structure into pauses, not symbols', () => {
     expect(toSpeech('## Step 1\n- first\n- second\n\nDone')).toBe('Step 1 first second. Done');
   });

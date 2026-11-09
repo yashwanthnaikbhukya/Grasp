@@ -12,6 +12,12 @@ describe('prepare — tutor text before Markdown parsing', () => {
     expect(prepare('[c2](#cite-c2)', false)).toBe('[c2](#cite-c2)');
   });
 
+  it('reads another model\'s marker style as a citation (seen from gpt-oss, 2026-11-09)', () => {
+    expect(prepare('the hypotenuse 2 【c1】.', false)).toBe('the hypotenuse 2 [c1](#cite-c1).');
+    expect(prepare('so 【c3†source】 and ［c4］', false)).toBe('so [c3](#cite-c3) and [c4](#cite-c4)');
+    expect(prepare('both 【c3, c6】', false)).toBe('both [c3](#cite-c3) [c6](#cite-c6)');
+  });
+
   it('splits a grouped citation into one marker each', () => {
     expect(prepare('the hypotenuse [c3, c6].', false)).toBe('the hypotenuse [c3](#cite-c3) [c6](#cite-c6).');
   });
