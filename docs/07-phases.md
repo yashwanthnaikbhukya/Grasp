@@ -127,7 +127,10 @@ against a committed baseline. How it scores and the rules:
 - ☑ Rubric judge `eval.judge@1` with the producer's provider excluded, **asserted
       per case** — on 2026-11-08 every judged case ran on the other provider
 - ☑ `pnpm eval --compare` — fails on regression (≥ 2 shared cases flipping in a
-      task); CI job `eval` runs it when provider secrets exist, skips otherwise
+      task); the `eval` workflow (`.github/workflows/eval.yml`) runs it when
+      prompts, golden sets, the gateway or schemas change, or by hand — never on
+      every push, since a run is ~100 calls on the app's own free-tier keys.
+      It skips until `GEMINI_API_KEY` / `GROQ_API_KEY` are repository secrets
 - ☑ Provider outages are *inconclusive* (`?`), not failures; Ollama never
       produces eval answers
 - ☑ Rule enforced, not trusted: `--compare` refuses a prompt version bump on a

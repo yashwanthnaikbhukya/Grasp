@@ -75,18 +75,18 @@ If one of these grows a database call, that's the bug — pass the data in.
 
 Three E2E flows, permanently. More is maintenance you'll resent.
 
-> **Today only the Unit row exists** — `pnpm test` runs the Vitest unit suite,
-> including the `UserScope` cross-user isolation tests, which assert the shape of
-> the query against a mocked collection. Planned, not built yet
-> ([07-phases.md](07-phases.md)): integration tests (Vitest is already set to
-> pick up `*.integration.test.ts` only when run explicitly; none exist), the eval
-> harness (`pnpm eval` is a stub), Playwright (not installed), and CI (there is
-> no workflow ran). **Lint and CI now exist:** `pnpm lint` (Biome, recommended
-> rules, lint only — no reformatting), `pnpm lint:boundaries` (the hard rules a
-> linter can't express: provider calls only in `core/llm`, no package importing
-> the app, no `grade` field), and `.github/workflows/ci.yml` running typecheck,
-> both lints and the unit tests on every PR. Suppressions carry a reason
-> (`// biome-ignore … : why`).
+> **What exists today:** `pnpm test` runs the Vitest unit suite, including the
+> `UserScope` cross-user isolation tests, which assert the shape of the query
+> against a mocked collection; the eval harness is built (see Evals below).
+> Planned, not built yet ([07-phases.md](07-phases.md)): integration tests
+> (Vitest is already set to pick up `*.integration.test.ts` only when run
+> explicitly; none exist) and Playwright (not installed). **Lint and CI:**
+> `pnpm lint` (Biome, recommended rules, lint only — no reformatting),
+> `pnpm lint:boundaries` (the hard rules a linter can't express: provider calls
+> only in `core/llm`, no package importing the app, no `grade` field), and
+> `.github/workflows/ci.yml` running typecheck, both lints, the unit tests and
+> the production build on every PR and push to `main`. Suppressions carry a
+> reason (`// biome-ignore … : why`).
 
 The cross-user retrieval test is a **security** test. Once it exists it runs in
 CI, and blocking it is not negotiable.
@@ -106,7 +106,7 @@ context (the concept catalogue, retrieved chunks, a learner card) is frozen in
 pnpm eval                        # every task with a golden set
 pnpm eval --task=tutor.coach     # one task (comma-separate for several)
 pnpm eval --verbose              # print the model output for every failure
-pnpm eval --compare              # fail on regression vs eval/baseline.json — CI runs this
+pnpm eval --compare              # fail on regression vs eval/baseline.json — the eval workflow runs this
 pnpm eval --update-baseline      # record this run as the baseline (commit the file)
 ```
 

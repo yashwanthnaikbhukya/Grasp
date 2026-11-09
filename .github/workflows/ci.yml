@@ -50,44 +50,6 @@ jobs:
       - name: Production build
         run: pnpm build
 
-  # Model-quality gate (docs/09-conventions.md — Evals): golden sets through the
-  # real gateway, judged on a different provider, compared with the committed
-  # baseline. Needs real provider keys — without them (forks, or before the
-  # repository secrets are set) every step is skipped and the job passes.
-  eval:
-    needs: check
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      # Pinned to the models the baseline was recorded on (see .env.example).
-      GRASP_MODEL_PROFILE: dev
-      GEMINI_MODEL_FAST: gemini-flash-lite-latest
-      GEMINI_MODEL_MID: gemini-3.1-flash-lite
-      GEMINI_MODEL_BEST: gemini-pro-latest
-      GROQ_MODEL_FAST: openai/gpt-oss-20b
-      GROQ_MODEL_MID: openai/gpt-oss-120b
-    steps:
-      - name: Skip without provider keys
-        if: env.GEMINI_API_KEY == '' || env.GROQ_API_KEY == ''
-        run: echo "::notice::GEMINI_API_KEY / GROQ_API_KEY not set — eval skipped."
-
-      - uses: actions/checkout@v4
-        if: env.GEMINI_API_KEY != '' && env.GROQ_API_KEY != ''
-
-      - uses: pnpm/action-setup@v4
-        if: env.GEMINI_API_KEY != '' && env.GROQ_API_KEY != ''
-
-      - uses: actions/setup-node@v4
-        if: env.GEMINI_API_KEY != '' && env.GROQ_API_KEY != ''
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-        if: env.GEMINI_API_KEY != '' && env.GROQ_API_KEY != ''
-
-      - name: Eval — regression vs baseline
-        if: env.GEMINI_API_KEY != '' && env.GROQ_API_KEY != ''
-        run: pnpm eval --compare
+# The model-quality gate (golden sets through real providers) is eval.yml: it
+# spends provider quota, so it runs only when prompts or the gateway change, or
+# by hand — not on every push.
