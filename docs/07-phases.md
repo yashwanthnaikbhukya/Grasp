@@ -7,13 +7,42 @@ The rule that makes this plan work: **nothing from phase *n+1* starts until phas
 gate. Scope creep is the most common way a project like this dies, and the gates
 are the only mechanism that stops it.
 
+## Where things stand — 2026-11-08
+
+**The rule above was broken, and the plan now says so.** Building ran ahead of
+the gates: Ask, Reps, Slips and Map all work end to end, but only Gate 0 has
+passed. Racing ahead was not wasted — it surfaced real bugs no gate would have
+— but it also means the event log, the retrieval filter and the learner-facing
+shell were never hardened. Phase H closes that debt before anything new.
+
+**Order from here** — each step unblocks the next:
+
+1. **Phase H — Hardening** *(nearly closed — 3 of 4 gate checks pass; CI needs a
+   GitHub remote)*. Event-log integrity first: `events` is append-only, so every
+   day of traffic writes evidence that can never be corrected later.
+2. **0.4 Eval harness** *(built — `pnpm eval`, 65 cases across 6 tasks, baseline
+   recorded, CI-gated; two golden sets left)*. No prompt version bump until its
+   task has ≥10 golden cases — `--compare` enforces it. Next prompt work, by the
+   baseline: `slip.classify` (6/11), then Coach (7/10).
+3. **Gate 1** (Ask), with the experience track (1.8) — navigation, a real home,
+   typeset maths. A tutor that hangs or shows raw LaTeX fails the gate in spirit
+   even if the numbers pass.
+4. **Gate R — first real learner.** Consent, deletion, backups, deploy. Gate 2
+   *needs* real attempts, and nothing real can be collected until R passes.
+5. **Gate 2** (Reps calibration on real data) → Phase 3 → Phase 4.
+
+No new surface (Snap, Duel) starts before Gate 2.
+
 ---
 
 ## Phase 0 — Foundations ◐
 
 *Weeks 1–2. Goal: the spine exists and is observable.*
 
-### 0.1 Pick the first corpus ☐
+### 0.1 Pick the first corpus ☑
+
+Picked: `in-cbse-secondary-math` (mathematics). One chapter ingested so far —
+`data/corpus/trigonometry.md`, 9 chunks.
 
 Not the product's scope — Grasp is global, and a learner's curriculum lives on
 their profile ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)). This is
@@ -57,15 +86,17 @@ empty graph is a valid starting state — the first ingestion run populates it.
 > the existing `trig-ratios` — landing in the review band rather than merging.
 > The safety net worked; the judgement needs the golden set above.
 
-### 0.3 Infrastructure ☑
+### 0.3 Infrastructure ◐
 
-- ☑ Monorepo (pnpm workspaces + turbo), TS config, lint
+- ☑ Monorepo (pnpm workspaces + turbo), TS config
+- ☐ **Lint** — `turbo run lint` resolves to nothing in every package; there is
+      no ESLint/Biome config, so `pnpm check` only typechecks (moved to Phase H)
 - ☑ `packages/schema` — Zod schemas
 - ☑ `packages/core/db` — client, typed collections, index definitions
 - ☑ `packages/core/llm` — gateway, registry, providers, failover, tracing
 - ☑ `packages/core/events` — idempotent append
-- ☑ `packages/prompts` — versioned registry + 4 templates
-      (`query.understand`, `concept.tag`, `slip.classify`, `tutor.reply`)
+- ☑ `packages/prompts` — versioned registry, 9 templates today (started with
+      `query.understand`, `concept.tag`, `slip.classify`, `tutor.reply`)
 - ☑ `pnpm setup:check` — reports what's wired, per phase, with fixes
 - ☑ `pnpm db:indexes` — all regular indexes + prints the Atlas Search defs
 - ☑ `pnpm db:seed` — curricula (~22 across 15 regions) + universal concept graph,
@@ -75,21 +106,56 @@ empty graph is a valid starting state — the first ingestion run populates it.
 - ☑ `LearnerProfile` + completeness scoring (the onboarding target schema)
 - ☑ Vitest + registry guard tests (prompt existence, tier invariants, cache safety)
 - ☑ `/debug/gateway` — makes the gate below verifiable in a browser
-- ☐ **Atlas cluster + the two Atlas Search indexes** ([08-setup.md](08-setup.md))
-- ☐ **At least two model provider keys** — one is not enough, you'll rate-limit
-- ☐ **Ollama + `nomic-embed-text`** pulled locally
-- ☐ Langfuse project (optional, recommended now)
+- ☑ **Atlas cluster + the two Atlas Search indexes** ([08-setup.md](08-setup.md)) —
+      both `READY`, and `pnpm retrieval:eval` reports `lexical=atlas vector=atlas`
+- ☑ **At least two model provider keys** — Gemini + Groq
+- ☑ **Ollama + `nomic-embed-text`** pulled locally
+- ☐ Langfuse project (optional, recommended now — the code is wired, keys are blank)
 
-### 0.4 Eval harness ☐
+### 0.4 Eval harness ◐ — built; two golden sets to go
 
-`scripts/eval.ts` is a stub that lists every task needing a golden set, in
-priority order. Filling it in is the last item of Phase 0: golden-set runner +
-rubric judge + `--compare` regression gate.
+`pnpm eval` runs golden sets through the real gateway and gates regressions
+against a committed baseline. How it scores and the rules:
+[09-conventions.md § Evals](09-conventions.md#evals).
 
-Build it now while there are four tasks to evaluate. Build it in month six and
-you will never build it.
+- ☑ Golden-set runner over `packages/core/src/eval/golden/<task>.jsonl`, with
+      frozen fixtures (concept catalogue, 8 corpus chunks, a learner card) so
+      scores don't drift as the graph grows; every set is schema-checked in
+      `pnpm test` without a model call
+- ☑ Deterministic scorers for everything checkable (intent, concept ids, rewrite
+      wording, root cause, answer equality, question counts, "must not repeat")
+- ☑ Rubric judge `eval.judge@1` with the producer's provider excluded, **asserted
+      per case** — on 2026-11-08 every judged case ran on the other provider
+- ☑ `pnpm eval --compare` — fails on regression (≥ 2 shared cases flipping in a
+      task); CI job `eval` runs it when provider secrets exist, skips otherwise
+- ☑ Provider outages are *inconclusive* (`?`), not failures; Ollama never
+      produces eval answers
+- ☑ Rule enforced, not trusted: `--compare` refuses a prompt version bump on a
+      task with fewer than 10 golden cases
+- ☑ Golden sets — 65 cases: `query.understand` 13, `slip.classify` 11,
+      `card.solve` 11, `tutor.answer` / `tutor.teach` / `tutor.coach` 10 each
+      (the Coach set opens with the 2026-11-08 "I don't know" loop, verbatim)
+- ☐ Golden set for `concept.propose` **resolution** (passage → right existing
+      node) — needs the live graph and embeddings, so a different runner shape
+- ☐ Golden set for `card.generate`
 
-### Gate 0 ☐
+**Baseline, 2026-11-08** (`packages/core/src/eval/baseline.json`):
+
+| Task | Pass | What fails — kept failing on purpose |
+| --- | --- | --- |
+| `query.understand@2` | 13/13 | — |
+| `card.solve@1` | 11/11 | — |
+| `tutor.answer@1` | 9/10 | Not labelling an off-syllabus answer as general knowledge |
+| `tutor.teach@1` | 9/10 | Re-asking the same check question after a wrong answer |
+| `tutor.coach@1` | 7/10 | After two misses, re-asks instead of explaining the step; states a simple fact instead of coaching |
+| `slip.classify@2` | 6/11 | Reaches for `misconception` on fast, high-mastery slips; ignores weak-prerequisite evidence |
+
+**First prompt change measured by it:** `query.understand@2` (a short reply right
+after the tutor's question is an *answer* to it; maths words kept exactly) beat
+`@1` 13/13 vs 12/13 on two runs each — `@1` read "tan" as an unclear request and
+once rewrote "cos 30" as "ω 30°".
+
+### Gate 0 ☑ (gateway) · 0.4 still open
 
 > A `generate()` call for a task with a Zod schema returns validated typed data;
 > forcing the primary provider to fail produces a **successful** response from the
@@ -97,9 +163,226 @@ you will never build it.
 
 Verify with: `pnpm setup:check` then the `/debug/gateway` page.
 
+**Passed 2026-11-08.** `query.understand@1` validated on groq at depth 0; with groq
+forced down, gemini served it at depth 1, and `llmCalls` holds both attempts under
+one trace id. Phase 0 is not *closed* until 0.4 (the eval harness) exists.
+
 ---
 
-## Phase 1 — Ask ☐
+## Phase H — Hardening ◐ — nearly closed
+
+*Inserted 2026-11-08, after a full review (docs vs code, the hard rules, and a
+walk-through as a new learner). Everything here was **verified in the code or
+seen happen** — no speculative items. It comes before new features because the
+features already exist; what they lack is integrity.*
+
+### H.0 Found by using it (2026-11-08) ☑
+
+- ☑ **Signing in to an existing account returned 500** ("Invalid id value"):
+      Next bundled a second copy of `mongodb`/`bson` because `apps/web` didn't
+      depend on `mongodb` directly, so Better Auth's `instanceof ObjectId` check
+      failed. Sign-up never touched that path, which is why it went unnoticed.
+      Fix: `mongodb` is a direct dependency of `apps/web`, and `better-auth` +
+      its Mongo adapter are server-external
+- ☑ **An English-only learner in India got tutor replies in Hindi** — the learner
+      card stated no language for English, and the prompt's Hinglish guidance
+      filled the gap. The card now always states the language, by name
+- ☑ `/` was a developer status page with no way in; it is now a landing page
+      (signed-in learners are redirected), and the status page lives at `/debug`
+
+### H.0b Found by testing everything (2026-11-09) ☑
+
+Full write-up: [test-reports/2026-11-09.md](test-reports/2026-11-09.md).
+
+- ☑ **Structured output dropped LaTeX backslashes.** A strict-schema JSON decoder
+      only allows `\" \\ \/ \b \f \n \r \t \u`, so `\sqrt`, `\dfrac`, `\sin`,
+      `\circ`, `\phi` came back as `sqrt`, `dfrac`… (5 of 8 newly verified cards).
+      `parseModelJson` now restores known commands inside maths
+      (`core/llm/latex.ts`); 15 stored questions repaired
+- ☑ **Cards that cite what the learner never sees** — "According to the
+      passage", "In the worked example", "the triangle shown": 9 of 30 generated.
+      Now a structural fault; 4 verified cards re-audited to `rejected`.
+      The generator still writes them — `card.generate@2` needs a golden set first
+- ☑ **`/debug/gateway` spent two model calls per anonymous request in
+      production** even though it answered 404: a layout's `notFound()` does not
+      stop its page rendering in parallel. `middleware.ts` now 404s `/debug` before
+      anything renders; the page guards itself too
+- ☑ **The feed re-served a card seconds after it was answered**, so its worked
+      solution was still on screen — free mastery. Cards answered in the last
+      12 h (`RESERVE_AFTER_MS`) are held back; Today counts what Reps will serve
+- ☑ `DELETE /api/sessions` answered `{ok:true}` for another learner's chat (it
+      changed nothing — the write is scoped); it now answers 404
+- ☑ Baseline response headers (`X-Frame-Options`, `nosniff`, `Referrer-Policy`,
+      `Permissions-Policy`); `X-Powered-By` off. ☐ CSP still to do — KaTeX inline
+      styles and the pre-paint theme script need a nonce or hashes
+- ☑ GCSE learner retrieved nothing (the corpus is CBSE-tagged and the curriculum
+      filter was hard): curriculum is now a preference with a labelled top-up
+      ("Another syllabus › …") — retrieval:isolation still passes
+
+### H.0c Found in use, same day (2026-11-09) ☑
+
+- ☑ **The tutor steered a biology question to trigonometry.** Retrieval always
+      returns its top k, so "what is photosynthesis" got six trig passages; the
+      learner card then pulled in those concepts' mastery and any misconceptions.
+      Now: a relevance gate keyed on query understanding (`context/relevance.ts`),
+      a learner card scoped to the gated concepts, a `no-material` flag
+      (*General explanation*), and `tutor.*@3` — v2 plus one grounding rule
+      (evals: answer 9/10, teach 9/10, coach 8/9, no regressions)
+- ☑ **Questions sometimes classified `chitchat`** (no retrieval, 1,000-token
+      reply). A deterministic guard (`context/intent.ts`) + golden qu-14..17. A
+      `query.understand@3` was tried and dropped: it regressed qu-06 (meta)
+- ☑ **Feature switching felt laggy.** No route had a loading state, and Reps,
+      Map and Slips fetched their data after the page — two round trips. Now:
+      `loading.tsx` skeletons everywhere (first change 5–7 ms, prefetched), first
+      data rendered on the server (`lib/data/*` shared with the API routes),
+      independent queries batched. Reps 950 → 320 ms, Map 530 → 325 ms, answer →
+      verdict ~400 ms. `pnpm dev` on Turbopack. Measurements in
+      [11-experience.md](11-experience.md#performance-budgets)
+- ☑ Browser dialogs replaced by Grasp's own (`useConfirm`); delete is a bin icon,
+      not ×; select chevrons drawn at the field inset; one height for all fields;
+      `color-scheme` per theme; `microphone=(self)` (the security header had
+      blocked dictation)
+- ☐ Ask's first token is still p50 ~5.5 s on free-tier Gemini — a provider
+      limit, not ours. A paid tier, or routing the tutor to a faster first
+      provider, is the fix; minimal thinking measured < 1 s better and noisy
+
+### H.1 Event log and learner state — first, because it cannot be fixed later
+
+- ☑ **Attempt idempotency from a client attempt id** (UUID per card render,
+      Zod-validated) — verified live: two concurrent POSTs plus a retry with one
+      id ⇒ 1 event, 1 attempt row, 1 fold
+- ☑ Client in-flight guard on Reps — a double keypress no longer records twice
+- ☑ **Fold only from a persisted event.** Emit failure ⇒ 503 and nothing is
+      folded; every mastery row is stamped with `updatedFromEventSeq`, and the
+      fold uses optimistic concurrency so two racing attempts both land
+- ◐ `recordAttempt()` in `core/learner` — grading, the event and the fold moved
+      out of `/api/attempt` (now ~40 lines). Still in `apps/web`: the feed's
+      candidate selection and the map's depth/blocker logic. `masteryFromDoc()`
+      replaced four drifting copies of the row→record conversion
+- ☑ Read-only events scope — `UserScope.events()` exposes only reads (tested)
+- ☑ `attempts.questionId` stored as a string, like the event payload (rule 12);
+      one attempt row per event via a unique `(userId, eventSeq)` index
+- ☑ **Rule 13:** model concept ids pass `knownConceptIds()` (exact id → alias or
+      name → slug; unmatched dropped) before they boost retrieval, reach the
+      tutor, enter a `doubt.asked` event or tag a generated question. The
+      `query.understand` catalogue is the learner's subjects (≤400), not "the
+      first 200 rows"
+- ☑ **`pnpm learner:rebuild`** (shadow, read-only): replays `attempt.recorded`
+      through the pure fold and diffs against stored mastery. First run: 3 of 4
+      learners identical; one August test account has 2 folds with no event —
+      the pre-H.1 bug, caught in real data. `--write` waits until the report is trusted
+- ☑ `/api/attempt` only grades `verified` questions (rule 6 — grading by id used
+      to return a quarantined card's answer and move mastery on it)
+- ☑ Feed serves only `mcq`, the one type the Reps UI can answer
+
+### H.2 Retrieval
+
+- ☑ **Scope filter inside the search** — `$vectorSearch.filter` and `$search`
+      `compound.filter` (`searchScopeFilter`), plus the `$match` after both as a
+      second line of defence. Curriculum-neutral content uses an indexed
+      `curriculumNeutral` flag (backfilled; `$size` can't run in a pre-filter).
+      **`pnpm retrieval:isolation`: 1,008 foreign-user copies of the corpus, every
+      result unchanged, none leaked.** `recall@5` still 100%
+- ☑ Embedder down ⇒ keyword-only answer (`legs.vector: 'unavailable'`, message
+      flagged `keyword-only`) instead of a failed turn
+- ☑ `scopeFilter` + `searchScopeFilter` security tests
+- ☑ `pnpm db:indexes` creates/updates both Atlas Search indexes itself and
+      reports `unchanged` when they match
+
+### H.3 Gateway, latency and cost
+
+- ☑ **Streaming timeouts.** The stream path never applied `timeoutMs`: an
+      overloaded provider that accepted the request and went quiet hung the Ask
+      turn forever. Now: 10 s first-token deadline → failover, plus the task's
+      overall timeout
+- ☑ **Caller abort is not a provider failure** — Stop, or closing the tab, used to
+      fail over and spend the next provider's quota on nobody
+- ☑ **Provider cooldown** — a provider that just failed transiently sinks to the
+      back of its tier for 60 s, so an outage costs one request its deadline
+      instead of every request
+- ☑ **LaTeX in model JSON** — `"\theta"` parsed as TAB + "heta"; `"\sin"` failed
+      the parse outright. Repaired before parsing; 2 stored questions fixed
+- ☑ `query.understand` on the Ask path has a 1.5 s deadline, then the raw
+      message is used (Groq answers it in ~0.5–0.8 s; 700 ms would drop too many
+      good rewrites)
+- ☑ Repair turn is a versioned prompt (`schema.repair@1`); the unused
+      `tutor.explainAnswer` task (which borrowed another task's prompt) is removed;
+      `chat/route.ts` reads the prompt version from the registry
+- ☑ **Cost guard** — over `GRASP_DAILY_TOKEN_BUDGET` output tokens today, a
+      learner's tutor turns run on `fast` (`llm/budget.ts`, index `user_daily`)
+- ☑ Rate limit: 12 tutor turns per learner per minute, 429 + `retry-after`
+      (in-memory — Redis before a multi-instance deploy)
+- ☑ `ttftMs` recorded on every tutor message (Gate 1's number)
+- ☑ **`mid` chain decided from `ttftMs`: Gemini stays first, on its lightest
+      model.** `gemini-flash-latest` was overloaded all day on 2026-11-08 (a Coach
+      turn: 10.5 s to first token). `GEMINI_MODEL_MID` is now
+      `gemini-3.1-flash-lite` — free-tier limits are per model and far higher for
+      flash-lite, and it streams its first token in ~0.9–1.5 s with no thinking
+      tokens. Live: tutor turns served by it at depth 0, `ttftMs` 3.3 s (was 10.5 s).
+      Pinned rather than aliased so fast and mid use separate quota buckets.
+      (`gemini-2.5-flash-lite` is listed for the key but 404s.)
+- ☐ **TTFT to Gate 1's 1.5 s:** the model is now ~1 s of the 3.3 s; the rest is
+      `query.understand` (~0.8 s) and retrieval running *before* it. Next: start
+      retrieval on the raw message in parallel with the rewrite, and stream the
+      tutor while the rewrite-based retrieval refines
+- ☑ `/debug/*` 404 in production (`debug/layout.tsx`)
+- ☑ Cooldown backs off 1 → 2 → 4 … → 10 min while a provider keeps failing —
+      a flat 60 s let an hours-long Gemini overload cost every turn 10 s again
+
+### H.4 API safety
+
+- ☑ Every route body and id param validated from `@grasp/schema`, 400 on failure
+      (`attempt`, `feed`, `chat`, `profile`, `sessions`)
+- ☑ Hand-written duplicates of schemas replaced (rule 3): `ContextBundle` is now
+      the schema's (which was rewritten to describe the real bundle),
+      `MasteryStateRecord` derives from `Mastery`, `DocEvent` from `StoredEvent`,
+      the Reps client's `Card`/`Graded` from `FeedCard`/`AttemptResult`
+- ☑ Raw error text never reaches the client — routes use `serverError()`;
+      `/api/health` shows driver detail only outside production
+- ☑ Chat stream: `send` is safe after disconnect; the answer is saved regardless
+      and flagged `interrupted` when cut short
+- ☑ Chat history is the *latest* 40 messages — it was the oldest 40, freezing
+      context from turn 21 and hanging new messages off message #40
+- ☑ Slip classification via `after()`, not `void`
+- ☑ Groq's "Failed to generate JSON" 400 is treated as a model failure and fails
+      over (no cooldown), instead of dropping `slip.classify` to its prior
+- ☑ Feed query sorts before `.limit(500)` and skips concept-less cards; the
+      Slips query has its own index (`user_recent`)
+
+### H.5 Engineering hygiene
+
+- ☑ **Biome** (`pnpm lint`, recommended rules, lint only): 0 errors; 40 warnings
+      left visible (mostly non-null assertions in older code). Every suppression
+      carries its reason
+- ☑ **`pnpm lint:boundaries`** — provider hosts/SDKs only in `core/llm` (rule 1),
+      no package imports the app, no `grade` field (rule 10). Proven to fail on a
+      planted violation
+- ☑ **CI** — `.github/workflows/ci.yml`: frozen install, typecheck, both lints,
+      unit tests on every PR and push to `main`. Runs once the repo has a GitHub
+      remote (there is none yet); the same sequence passes locally
+- ☐ `pnpm eval --compare=main` in CI (after 0.4)
+- ☐ Tests for `verifyCitations`
+- ☐ Move the feed's candidate selection and the map's depth/blocker logic out of
+      `apps/web` into core (the last business logic in a surface)
+
+### Gate H ◐ — 3 of 4
+
+> A duplicate attempt POST changes nothing; mastery for a test learner is rebuilt
+> from `events` alone and matches what is stored; with 1,000 foreign-user chunks
+> present, own `recall@5` is unchanged; CI runs lint + typecheck + tests on every
+> PR and is green.
+
+- ☑ Duplicate attempt POST changes nothing (two concurrent + one retry ⇒ 1 event,
+      1 attempt row, 1 fold — verified live)
+- ☑ Rebuild from `events` matches stored mastery for every learner whose folds
+      came from persisted events (`pnpm learner:rebuild`); the one drifted test
+      account predates the fix
+- ☑ 1,000 foreign-user chunks, own results unchanged (`pnpm retrieval:isolation`)
+- ◐ CI: workflow written and green locally; needs a GitHub remote to run on PRs
+
+---
+
+## Phase 1 — Ask ◐
 
 *Weeks 3–6. Goal: a tutor that is visibly not ChatGPT.*
 
@@ -109,16 +392,30 @@ Built **before** chat, because the learner card is empty until it exists. Full
 spec: [10-onboarding.md](10-onboarding.md).
 
 - ☑ Four screens, progressive, each saving as it goes
-- ☑ Region picker (25 regions) → curriculum candidates, notation, locale
-- ☑ Age asked plainly, never inferred + stage picker with **local labels**
-- ☑ Curriculum multi-select filtered by region and stage; self-study always works
-- ☑ Goal + exam date + minutes/day
-- ☑ Instruction language + code-switching pair
+- ☑ Region picker — 30 one-tap countries plus every other country — →
+      programme candidates, notation, locale
+- ☑ Age asked plainly, never inferred + stage picker with **local labels**, from
+      Class/Grade/Year 1 through college years 1–4, Master's and Doctorate
+      ([ADR 0008](adr/0008-programmes-subjects-tertiary-stages.md))
+- ☑ **Any student, any subject** (2026-11-09): 100 programmes in 40 regions —
+      school boards, entrance and admission exams (JEE, NEET, CUET, SAT, GRE,
+      JAMB, ENEM…), university coursework and degrees, professional
+      qualifications (ACCA, CFA, CA, CPA), olympiads — searchable and grouped by
+      kind; subjects from a ~100-subject catalogue in 12 groups with search,
+      browse and type-your-own. Seed held to the catalogue by tests
+- ☐ Content for subjects beyond maths — Ask answers any subject today (marked
+      *General explanation*); Map and Reps fill in as material is ingested
+- ☑ Goal (incl. *career*) + exam date, with the chosen programmes' exams as
+      one-tap labels + minutes/day
+- ☑ Instruction language (34) + code-switching pair
 - ☐ Country geo-guess from request headers (currently a plain picker)
 - ☐ `profileCompleteness` nudge in the UI (the function exists and is tested)
 - ☐ **Consent gating by age and region** — under threshold ⇒ guardian flow.
       Required before any real learner; not needed on synthetic data
 - ☐ Learner-card snapshot tests across the profile matrix
+- ◐ Accessible choice chips, labelled fields ☑; programmes ranked by region and
+      stage fit ☑; goal defaulted from the answers ☐; primary button always on screen ☐
+      — details in [11-experience.md](11-experience.md#onboarding--exists-4-steps-saves-as-it-goes)
 
 ### 1.6 Auth ☑
 
@@ -142,23 +439,28 @@ Verified live against Atlas: sign-up → session → empty profile → onboardin
 redirects to `/login?next=/app`. A learner stored as `stage: 10` with
 `region: NG` renders as **"SSS 1"**.
 
-### 1.1 Ingestion ☐
+### 1.1 Ingestion ☑
 
-- ☐ Chunker (layout-naive; heading-path aware)
-- ☐ Local embedding via Ollama, batched
-- ☐ `concept.tag` pass over every chunk
-- ☐ Stamp `curriculumIds`, `subject`, `stageRange`, `language` on every chunk
-- ☐ Ingest one textbook chapter end to end
-- ☐ Retrieval eval: 20 hand-written student questions, measure `recall@5`
+- ☑ Chunker (layout-naive; heading-path aware; never splits display maths)
+- ☑ Local embedding via Ollama, batched
+- ☑ `concept.tag` pass over every chunk (8 of 9 tagged on the first chapter)
+- ☑ Stamp `curriculumIds`, `subject`, `stageRange`, `language` on every chunk
+- ☑ Ingest one textbook chapter end to end (`data/corpus/trigonometry.md`)
+- ☑ Retrieval eval: 20 hand-written student questions — `recall@5` **100%
+      (20/20)**, rank-1 55%, on the Atlas indexes (`pnpm retrieval:eval`)
 
-### 1.2 Retrieval ☐
+### 1.2 Retrieval ◐
 
-- ☐ Atlas Search (BM25) leg
-- ☐ Atlas Vector Search leg
-- ☐ RRF fusion
-- ☐ Local cross-encoder rerank, top-20 → top-5
-- ☐ Profile-driven scope filter + **security test**: a user cannot retrieve
-      another user's chunks; curriculum-neutral content stays eligible for everyone
+- ☑ Atlas Search (BM25) leg
+- ☑ Atlas Vector Search leg
+- ☑ RRF fusion + concept boost
+- ◐ Rerank — lexical-overlap rerank (20% weight) today; the local cross-encoder,
+      top-20 → top-5, is still ☐
+- ☑ Profile-driven scope filter; curriculum-neutral content stays eligible
+- ☐ **Security test on `scopeFilter` itself** — `ScopedCollection` is tested,
+      but the filter inside `$search` / `$vectorSearch` is not: a user must not
+      retrieve another user's chunks
+- ☐ Rank-1 hit rate above 55% (it is the number a learner actually feels)
 
 ### 1.3 Context broker v1 ☑
 
@@ -170,12 +472,14 @@ lives.
 - ☑ Per-intent budget profiles, explicit allocation, shed reporting
 - ☑ History compaction (verbatim tail; digest wiring pending)
 - ☑ Hybrid retrieval with profile-driven scope filter
-- ☑ Learner card with mastery, prerequisite gaps, misconceptions, notation
+- ◐ Learner card with mastery, prerequisite gaps, notation — the misconceptions
+      slot is wired but nothing writes `misconceptions` or `episodes` yet
 - ☑ Citation ids stamped; `verifyCitations` flags fabricated and ungrounded
 
 ### 1.4 Chat ◐ — **usable end to end**
 
-- ☑ SSE streaming from a route handler, failover before first token only
+- ☑ SSE streaming from a route handler, failover before first token only —
+      with a 10 s first-token deadline and provider cooldown (Phase H.3)
 - ☑ Sessions: sidebar, auto-title, archive, reload
 - ☑ Markdown + maths + code blocks, streaming-safe renderer
 - ☑ Citation markers inline, expandable source panel with headings and excerpts
@@ -183,31 +487,127 @@ lives.
 - ☑ Socratic default — probe once, then explain
 - ☑ Per-turn diagnostics: intent, rewrite, concepts, sources, timings
 - ☑ `parentMessageId` written on every message (tree stored; branching UI pending)
-- ☐ Edit-and-branch UI
-- ☐ Regenerate
+- ◐ Edit the latest question in place, Regenerate the latest answer — the old
+      messages get `supersededAt` (kept for evals, never shown or resent).
+      Editing an earlier message as a real branch is still to do
+- ☑ Answer feedback (Good / Bad → `messages.feedback`), Copy, Read aloud
+- ☑ Chat layout (learner right, tutor left), composer with attach / dictate /
+      mode menu / icon send, thinking state, typing reveal (2026-11-09)
 - ☐ Cross-session search
 - ☐ Session digest for long conversations (verbatim tail only for now)
-- ☐ KaTeX typesetting (maths currently renders as styled source)
+- ☑ **Chat modes** — *Answer* (direct, like a general assistant), *Teach*
+      (step by step, then one check question; the default), *Coach* (one step and
+      one question at a time). Picked per message, remembered per conversation;
+      one prompt per mode (`tutor.answer@1` / `tutor.teach@1` / `tutor.coach@1`)
+- ☑ **Two-way dialogue rules** shared by every mode — "I don't know" / "explain"
+      ⇒ explain now; an answer to the tutor's question ⇒ say what's right or
+      wrong and build on it; never repeat a question. Fixes a reproduced loop where
+      the tutor asked the same probing question twice to "explain me whole"
+- ☑ Earlier turns go to the model as real chat messages, not a text block
+- ☑ **Rendering on standard libraries**: react-markdown + remark-gfm (tables) +
+      remark-math + rehype-katex (typeset maths, MathML for screen readers), in
+      Ask *and* Reps
+- ☑ **Diagrams in answers** — the tutor can emit a ```plot block (function
+      graphs, triangles, the unit circle), Zod-validated (`PlotSpecSchema`),
+      drawn with Mafs, expressions compiled by mathjs (never `eval`)
+- ◐ Thinking state from the real phases — built; elapsed time after 3 s and
+      *Try again* at 30 s still to do
+- ☐ Session list as a drawer under 768 px; no empty "New chat" rows left behind
+      by a failed turn
+- ☐ History follows the active path from `activeLeafId`; fixture test at 60 turns
 
-### 1.5 Attachments ☐
+### 1.5 Attachments ◐ — interim path built (2026-11-09)
 
-- ☐ Presigned R2 upload from the browser
+Built: `POST /api/attachments` (one file, multipart) checks the type by its
+bytes (`sniff`), stores it on the Mongo document (`storage: 'inline'`, TTL 30
+days), and reads it once with `attachment.read@1` — a vision call made only to
+providers that can open the file (`reads`, Gemini today). The transcript goes
+into understanding, retrieval and the tutor's turn; the image or PDF itself also
+goes to the tutor when its provider can read it. Limits in
+`ATTACHMENT_LIMITS` (4 per message; 5 MB image, 8 MB PDF, 300 KB text; 20
+uploads / 10 min). Served back scoped, with `nosniff` and a sandboxing CSP.
+
+- ☐ Presigned R2 upload from the browser (replaces the inline bytes)
 - ☐ Inngest extraction job: detect → extract → chunk → embed → index
 - ☐ Image path: vision description + OCR, both indexed
 - ☐ PDF path: text + page images
-- ☐ Real extraction status in the UI, chat stays usable
+- ◐ Real extraction status in the UI — the chip says *Reading…*; Send waits
+      for it rather than answering from a partial read
 - ☐ **Both scopes**: `session` (TTL'd) and `library` (persists into the corpus)
+- ☐ Blocked on H.2: the scope filter must run inside the search first, or
+      attachments arrive as a retrieval regression
 
-### 1.6 Auth ☐
+### 1.7 Production path ☐
 
-Better Auth + Mongo adapter. Email magic link via Resend.
+Nothing is deployed yet, and two decisions lock in once it is.
+
+- ☐ **ADR 0008 — where embeddings run in production.** Ollama is localhost; a
+      serverless host has none. `nomic-embed-text` at 768 dims is baked into the
+      vector index, so changing model later means re-embedding everything
+- ☐ Vercel preview + production deploys from `main`, env from the platform
+- ☑ `ttftMs` recorded on every tutor message, measured from request receipt
+- ☐ **Safety intent**: distress / self-harm / abuse ⇒ a fixed, kind reply plus
+      the regional helpline, never a tutoring answer. ≥30 golden cases, 100%
+      routed. `Intent` has no safety class today ([10-onboarding.md](10-onboarding.md))
+- ☐ Error tracking; uptime check on `/api/health`
+
+### 1.8 Experience ◐ — shell, identity, Today and Profile built
+
+The shell around the surfaces. Spec: [11-experience.md](11-experience.md).
+
+- ☑ **One platform shell** (ChatGPT/Claude pattern): sidebar with logo, New chat,
+      Today · Ask · Reps · Map · Slips, recent chats and an account menu;
+      collapsible on desktop, a drawer on phones. Features hand off to each other
+      (`/reps?concept=`, `/ask?q=`, `/ask?session=`)
+- ☑ **Identity**: the Grasp mark, wordmark, app icon / favicon and a feature icon
+      family with per-feature colours — `components/brand/`, review at `/debug/brand`
+- ☑ **Today** replaces the `/app` profile dump: next action, today/week/ideas,
+      fix this first, last conversation, slip pattern, explore. (Daily-goal ring and
+      placement still ☐)
+- ☑ `/` is a learner landing page (signed-in ⇒ redirected into the app); the
+      developer status page moved to `/debug` with honest states
+- ☑ `/profile` — Profile & settings: answers in human words (*Edit answers*),
+      appearance (system / light / dark), account and sign-out
+- ☐ Shared accessible primitives (`Chip`, `Field`, `Checkbox`, `Button`, `Sheet`)
+- ☐ Playwright: sign-up → onboarding → Ask turn → Reps session, with axe at 0
+      serious violations, in CI
 
 ### Gate 1 ☐
 
 > A 20-turn conversation with 3 attachments: stays coherent, stays inside its
 > token budget (`bundle.budget.shed` empty on typical turns), cites real
 > retrievable sources, `fabricated-citation` rate is 0 across the golden set, and
-> p95 time-to-first-token is under 1.5 s.
+> p95 time-to-first-token is under 1.5 s **measured by `ttftMs`** — and a new
+> learner gets from `/` to a first answered card without being shown raw LaTeX,
+> a developer page, or a dead wait.
+
+---
+
+## Gate R — first real learner ☐
+
+*Not a phase of features: the line between synthetic data and a real child's
+data. Gate 2 needs real attempts, so this sits between Gate 1 and Gate 2. The
+checklist in [08-setup.md](08-setup.md#security-checklist-before-any-real-learner-touches-this)
+is part of it.*
+
+- ☐ Consent gating by age and region, with an integration test: an
+      under-threshold account writes nothing beyond itself until consent lands
+- ☐ **ADR — erasure vs an append-only `events` log.** Deletion is mandatory
+      under DPDP/GDPR; decide between per-user crypto-shredding and
+      pseudonymisation *before* the first real event is written
+- ☐ Account export and delete across every user-owned collection, tested
+- ☐ Atlas tier with backups (M0 has none); one restore drill; RPO ≤ 24 h
+- ☐ Alert on 5xx > 1% over 5 min
+- ☐ A no-training model tier for all real-learner traffic
+- ☐ Atlas network access restricted to deploy egress (it is `0.0.0.0/0` for dev)
+- ☐ WCAG 2.2 AA on onboarding, Ask and Reps: keyboard-only and reduced motion
+- ☐ `/reps` LCP < 2.5 s p75 on a mid-range Android over 4G; < 200 KB JS gzipped
+      per route
+- ☐ Privacy notice and terms per regime; incident runbook (provider outage,
+      leaked key, Atlas full)
+
+> **Gate R:** every item above is ticked, and one person who is not the author
+> has walked the consent, export and delete flows end to end.
 
 ---
 
@@ -218,12 +618,28 @@ Better Auth + Mongo adapter. Email magic link via Resend.
 ### 2.1 Question bank ◐
 
 - ☑ `card.generate` from chunks, targeting concept objectives
-- ☑ **Verification pipeline**: structural check → two independent solves →
-      judge → persist. `pnpm cards:build`
-- ☑ Only `verified` questions are servable (enforced in the query)
+- ☑ **Verification pipeline**: structural check → two solves → judge → persist.
+      `pnpm cards:build`
+- ☐ Make the two solves actually independent — today both are identical
+      `card.solve` calls on the same chain, so one model agrees with itself.
+      The second solve excludes the first solve's provider
+- ☐ Structural check rejects control characters in any text field (the
+      "sin heta" cards passed verification)
+- ☑ Structural check rejects a card that refers to a passage, worked example
+      or figure the learner never sees (H.0b)
+- ☐ **`card.generate@2`** — tell the generator the learner never sees the
+      passage, and to write `\\sin` inside JSON. Blocked on a `card.generate`
+      golden set (≥10 cases; `--compare` refuses the bump without one)
+- ☐ **Bank volume.** 8 tagged chunks → 8 verified cards (2026-11-09; pass rate
+      33% with the new checks). A learner finishes everything in one sitting.
+      Ingest more material, then `pnpm cards:build` at scale
+- ☑ Only `verified` questions are servable (enforced in the feed query *and*, since
+      Phase H, in `/api/attempt`)
 - ☑ Answer comparison handles fractions, roots, percentages, set vs sequence
 - ☐ Human spot-check UI for the quarantine queue
-- ☐ Card types beyond mcq wired into the UI
+- ☐ *Report a problem* on every card → quarantine; < 2% errors on a 50-card
+      spot-check per release
+- ☐ Card types beyond mcq wired into the UI (the feed serves `mcq` only until then)
 
 Observed pass rate 67%. The rejects were real: one asked "which could NOT be…",
 the trick phrasing `card.generate` explicitly forbids — verification caught the
@@ -249,15 +665,21 @@ generator breaking its own rules.
 - ☐ Wrong answer → streamed explanation from a pre-warmed bundle
 - ☐ Daily goal ring, XP
 - ☐ 8-question cold-start placement (`placementNext` exists and is tested)
+- ☑ Recently answered cards held back for 12 h; "All caught up" end state
+- ☐ End-of-session summary: accuracy, concepts that moved, next due, one next step
+- ☐ PostHog D1/D7 retention on Reps — Reps has shipped, so the clock has started
 
 ### Gate 2 ☐
 
 > A 50-card session has zero perceived latency (no model call in the swipe path,
 > verified in the trace), **and** the weekly calibration job shows mastery beating
-> the constant baseline on Brier score.
+> the constant baseline on Brier score — over **≥ 2,000 next-attempt predictions
+> from ≥ 20 consented learners**, with a bootstrap 95% CI that excludes the
+> baseline.
 
 The second half is the real gate. If mastery doesn't predict better than a
-constant, the personalization is theatre and no amount of UI fixes it.
+constant, the personalization is theatre and no amount of UI fixes it. Synthetic
+learners only test the plumbing — this gate needs Gate R first.
 
 ---
 
@@ -309,8 +731,11 @@ synchronized replay, not a game server.
 - ☑ Critical edges: a weak prerequisite under something being attempted
 - ☑ **Weakest chain** — "fix this first", the most useful thing the map can say
 - ☑ Node actions: practise / ask about it / see prerequisites
-- ☐ Mindmap generation from a document or session
-- ☐ Export
+- ☑ Rendered with **React Flow** (`@xyflow/react`) over the same deterministic
+      core layout: pan/zoom, fit-to-view (nothing clipped), arrowheads for
+      prerequisite → dependent, full names in sentence case on two lines, state
+      in text as well as colour, keyboard focus and selection
+- ☐ "Start here" for a learner with nothing started; a list view for screen readers
 - ☐ Mindmap generation from doc, session, or concept — **typed edges**, schema-validated
 - ☐ Expand-on-demand child generation
 - ☐ Mastery overlay on mindmaps
@@ -341,7 +766,9 @@ synchronized replay, not a game server.
 
 Recorded so they don't creep in:
 
-- Multi-subject or multi-grade support (breaks the scope mechanism)
+- Ingesting a second subject before Gate 2 — the schema is already global
+  ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)); a second *corpus* is
+  what dilutes retrieval
 - Live classes, video hosting, doubt marketplaces
 - Native mobile apps (mobile web first; Expo only if the swipe demands it)
 - Payments

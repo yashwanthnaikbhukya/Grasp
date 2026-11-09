@@ -192,6 +192,29 @@ describe('structuralFaults', () => {
     ).toMatch(/blank option/);
   });
 
+  it('rejects a card that leans on a passage the learner never sees', () => {
+    const stem = 'According to the passage, why are the ratios invariant?';
+    expect(structuralFaults(card({ stem })).join(' ')).toMatch(/never sees/);
+    const solution = 'The passage states that similar triangles have proportional sides.';
+    expect(structuralFaults(card({ solution })).join(' ')).toMatch(/passage/);
+  });
+
+  it('rejects a card that leans on a figure or worked example the learner never sees', () => {
+    for (const stem of [
+      'In the worked example, how is the denominator transformed?',
+      'In the right triangle shown, which side is longest?',
+      'In the figure, what is angle B?',
+    ]) {
+      expect(structuralFaults(card({ stem })).join(' ')).toMatch(/never sees/);
+    }
+  });
+
+  it('does not mistake ordinary wording for a passage reference', () => {
+    const stem =
+      'A text message costs 5p. The given triangle has sides 3, 4, 5. Sketch the graph of y = x^2, for example at x = 2.';
+    expect(structuralFaults(card({ stem }))).toEqual([]);
+  });
+
   it('catches a numeric question with no parseable answer', () => {
     const bad = card({ type: 'numeric', options: undefined, answer: 'roughly a half' });
     expect(structuralFaults(bad).join(' ')).toMatch(/no parseable answer/);

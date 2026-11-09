@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ensureLearnerRecord, forUser, getAuth, type UserScope } from '@grasp/core';
@@ -22,7 +23,7 @@ export interface Session {
   scope: UserScope;
 }
 
-export async function getSession(): Promise<Session | null> {
+async function loadSession(): Promise<Session | null> {
   const raw = await getAuth().api.getSession({ headers: await headers() });
   if (!raw?.user) return null;
 
@@ -41,6 +42,13 @@ export async function getSession(): Promise<Session | null> {
     scope: forUser(String((learner as { _id?: unknown })._id ?? raw.user.id)),
   };
 }
+
+/**
+ * The session for this request — memoised per request, so the platform layout
+ * (which draws the nav) and the page (which renders the feature) share one
+ * read instead of each hitting auth and the learner record.
+ */
+export const getSession = cache(loadSession);
 
 /** Redirects to sign-in when absent. Use in pages and route handlers alike. */
 export async function requireUser(next?: string): Promise<Session> {

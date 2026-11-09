@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import type { CardSolve, GeneratedCard } from '@grasp/schema';
+import { knownConceptIds, loadGraph } from '../concepts/resolve';
 import { collections } from '../db/collections';
 import { generate } from '../llm/gateway';
 import { judge, structuralFaults } from './verify';
@@ -153,9 +154,16 @@ async function persist(
   solves: readonly CardSolve[],
   notes: string,
 ): Promise<void> {
+  const graph = await loadGraph(); // cached; one read per minute at most
   await collections.questions().insertOne({
     _id: new ObjectId(),
-    conceptIds: card.conceptIds.length > 0 ? card.conceptIds : args.conceptIds,
+    // Rule 13: the generator's tags must name real nodes, or this card would
+    // fold mastery into concepts that don't exist. Fall back to the chunk's own
+    // (already resolved) tags.
+    conceptIds: (() => {
+      const known = knownConceptIds(card.conceptIds, graph);
+      return known.length > 0 ? known : args.conceptIds;
+    })(),
     type: card.type,
     stem: card.stem,
     options: card.options,

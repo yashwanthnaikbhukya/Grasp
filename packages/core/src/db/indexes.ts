@@ -7,9 +7,10 @@ import { db } from './client';
  * Every regular index, in one place. Idempotent — `createIndexes` is a no-op for
  * definitions that already exist, so `pnpm db:indexes` is safe to re-run.
  *
- * Atlas Search and Atlas Vector Search are *separate resources* the driver
- * cannot create. `searchIndexDefinitions()` prints the JSON to paste into the
- * Atlas UI. See docs/08-setup.md#5.
+ * Atlas Search and Atlas Vector Search are *separate resources* from regular
+ * indexes — `createIndexes` cannot make them. `searchIndexDefinitions()` is the
+ * JSON for either path: paste into the Atlas UI, or pass to the driver's
+ * `createSearchIndexes` (MongoDB 7.0+, M0 included). See docs/08-setup.md#5.
  */
 
 export const REGULAR_INDEXES: Partial<Record<CollectionName, IndexDescription[]>> = {
@@ -27,7 +28,8 @@ export const REGULAR_INDEXES: Partial<Record<CollectionName, IndexDescription[]>
 
   [COLLECTIONS.curricula]: [
     // Onboarding: candidates for a learner's region + stage.
-    { key: { regions: 1, subject: 1, active: 1 }, name: 'onboarding_candidates' },
+    // `subject` left the key when curricula became multi-subject programmes (ADR 0008).
+    { key: { regions: 1, active: 1 }, name: 'onboarding_candidates_v2' },
   ],
 
   [COLLECTIONS.curriculumMappings]: [
@@ -63,6 +65,14 @@ export const REGULAR_INDEXES: Partial<Record<CollectionName, IndexDescription[]>
     { key: { userId: 1, conceptIds: 1, ts: -1 }, name: 'user_concept_recent' },
     { key: { questionId: 1 }, name: 'item_difficulty' },
     { key: { userId: 1, ts: -1 }, name: 'user_timeline' },
+    // One attempt row per event — a retried POST upserts onto the same row.
+    // Partial, because rows written before 2026-11-08 carry no eventSeq.
+    {
+      key: { userId: 1, eventSeq: 1 },
+      unique: true,
+      partialFilterExpression: { eventSeq: { $exists: true } },
+      name: 'one_per_event',
+    },
   ],
 
   [COLLECTIONS.mastery]: [
@@ -96,10 +106,16 @@ export const REGULAR_INDEXES: Partial<Record<CollectionName, IndexDescription[]>
     { key: { userId: 1, createdAt: -1 }, name: 'user_recent' },
     { key: { sessionId: 1 }, name: 'session' },
     { key: { status: 1 }, name: 'pipeline' },
+    // Loading a conversation looks attachments up by the message they came with.
+    { key: { userId: 1, messageId: 1 }, name: 'by_message' },
+    // Session attachments carry their bytes; they go after ATTACHMENT_LIMITS.keepDays.
+    { key: { expiresAt: 1 }, expireAfterSeconds: 0, name: 'ttl_expires' },
   ],
 
   [COLLECTIONS.slips]: [
     { key: { userId: 1, rootCause: 1, createdAt: -1 }, name: 'error_dna' },
+    // The Slips page: a learner's slips, newest first.
+    { key: { userId: 1, createdAt: -1 }, name: 'user_recent' },
     { key: { attemptId: 1 }, unique: true, name: 'one_per_attempt' },
   ],
 
@@ -121,6 +137,8 @@ export const REGULAR_INDEXES: Partial<Record<CollectionName, IndexDescription[]>
   [COLLECTIONS.llmCalls]: [
     { key: { createdAt: -1 }, name: 'recent' },
     { key: { task: 1, createdAt: -1 }, name: 'by_task' },
+    // The cost guard's "output tokens today, per learner" (llm/budget.ts).
+    { key: { userId: 1, createdAt: -1 }, name: 'user_daily' },
     // Keep 30 days locally; Langfuse holds the long tail.
     { key: { createdAt: 1 }, expireAfterSeconds: 60 * 60 * 24 * 30, name: 'ttl_30d' },
   ],
@@ -187,6 +205,7 @@ export function searchIndexDefinitions() {
           { type: 'filter', path: 'ownerId' },
           { type: 'filter', path: 'conceptIds' },
           { type: 'filter', path: 'curriculumIds' },
+          { type: 'filter', path: 'curriculumNeutral' },
           { type: 'filter', path: 'subject' },
           { type: 'filter', path: 'language' },
         ],
@@ -206,6 +225,7 @@ export function searchIndexDefinitions() {
             ownerId: { type: 'token' },
             conceptIds: { type: 'token' },
             curriculumIds: { type: 'token' },
+            curriculumNeutral: { type: 'boolean' },
             subject: { type: 'token' },
             language: { type: 'token' },
           },
@@ -213,4 +233,73 @@ export function searchIndexDefinitions() {
       },
     },
   ];
+}
+
+// ---- Atlas Search indexes, created and kept current by the driver ----------
+
+export interface SearchIndexResult {
+  name: string;
+  action: 'created' | 'updated' | 'unchanged';
+  status: string;
+}
+
+/** Does `theirs` contain everything `ours` specifies? Atlas adds defaults; extra keys are fine. */
+function coveredBy(ours: unknown, theirs: unknown): boolean {
+  if (Array.isArray(ours)) {
+    if (!Array.isArray(theirs)) return false;
+    // Field lists are unordered: every one of ours must appear somewhere in theirs.
+    return ours.every((o) => theirs.some((t) => coveredBy(o, t)));
+  }
+  if (ours && typeof ours === 'object') {
+    if (!theirs || typeof theirs !== 'object') return false;
+    return Object.entries(ours).every(([k, v]) =>
+      coveredBy(v, (theirs as Record<string, unknown>)[k]),
+    );
+  }
+  return ours === theirs;
+}
+
+/**
+ * Create missing search indexes and update drifted ones, via the driver
+ * (`createSearchIndexes` / `updateSearchIndex`, MongoDB 7.0+, M0 included).
+ * An update rebuilds the index in the background; queries keep working on the
+ * old one until the new one is READY.
+ */
+export async function ensureSearchIndexes(): Promise<SearchIndexResult[]> {
+  const out: SearchIndexResult[] = [];
+  for (const def of searchIndexDefinitions()) {
+    const col = db().collection(def.collection);
+    const existing = (await col.listSearchIndexes(def.name).toArray())[0] as
+      | { status?: string; latestDefinition?: unknown }
+      | undefined;
+    const type = def.type === 'Atlas Vector Search' ? 'vectorSearch' : 'search';
+
+    if (!existing) {
+      await col.createSearchIndexes([{ name: def.name, type, definition: def.definition }]);
+      out.push({ name: def.name, action: 'created', status: 'PENDING' });
+    } else if (!coveredBy(def.definition, existing.latestDefinition)) {
+      await col.updateSearchIndex(def.name, def.definition);
+      out.push({ name: def.name, action: 'updated', status: 'PENDING' });
+    } else {
+      out.push({ name: def.name, action: 'unchanged', status: String(existing.status ?? '?') });
+    }
+  }
+  return out;
+}
+
+/**
+ * Derived chunk flags that retrieval filters on inside the search. Idempotent:
+ * only touches chunks written before the flag existed.
+ */
+export async function backfillChunkFlags(): Promise<number> {
+  const res = await db()
+    .collection(COLLECTIONS.docChunks)
+    .updateMany({ curriculumNeutral: { $exists: false } }, [
+      {
+        $set: {
+          curriculumNeutral: { $eq: [{ $size: { $ifNull: ['$curriculumIds', []] } }, 0] },
+        },
+      },
+    ]);
+  return res.modifiedCount;
 }

@@ -1,0 +1,112 @@
+{
+  "updatedAt": "2026-11-08T13:33:20.446Z",
+  "tasks": {
+    "query.understand": {
+      "prompt": "query.understand@2",
+      "passed": 13,
+      "total": 13,
+      "cases": {
+        "qu-01-bounds": true,
+        "qu-02-idk-after-probe": true,
+        "qu-03-and-for-cos": true,
+        "qu-04-quiz": true,
+        "qu-05-greeting": true,
+        "qu-06-meta": true,
+        "qu-07-ladder": true,
+        "qu-08-tan45": true,
+        "qu-09-one-word-answer": true,
+        "qu-10-needs-clarification": true,
+        "qu-11-hinglish": true,
+        "qu-12-not-trig": true,
+        "qu-13-derived-identity": true
+      }
+    },
+    "slip.classify": {
+      "prompt": "slip.classify@2",
+      "passed": 6,
+      "total": 11,
+      "cases": {
+        "sl-01-decimal-slip": true,
+        "sl-02-answered-sin-not-cos": false,
+        "sl-03-sin-distributes": true,
+        "sl-04-sin-squared": true,
+        "sl-05-never-seen-cosec": true,
+        "sl-06-weak-prerequisite": false,
+        "sl-07-end-of-long-session": true,
+        "sl-08-radians-as-degrees": false,
+        "sl-09-added-not-subtracted": false,
+        "sl-10-no-prereq-option": true,
+        "sl-11-missed-the-not": false
+      }
+    },
+    "card.solve": {
+      "prompt": "card.solve@1",
+      "passed": 11,
+      "total": 11,
+      "cases": {
+        "cs-01-sin30": true,
+        "cs-02-tan45": true,
+        "cs-03-identity": true,
+        "cs-04-cos-from-sin": true,
+        "cs-05-tree-45": true,
+        "cs-06-sum": true,
+        "cs-07-hypotenuse": true,
+        "cs-08-tower-30": true,
+        "cs-09-two-correct": true,
+        "cs-10-none-correct": true,
+        "cs-11-no-information": true
+      }
+    },
+    "tutor.answer": {
+      "prompt": "tutor.answer@1",
+      "passed": 9,
+      "total": 10,
+      "cases": {
+        "ta-01-tan60": true,
+        "ta-02-prove-identity": true,
+        "ta-03-tower": true,
+        "ta-04-cosec": true,
+        "ta-05-follow-up": true,
+        "ta-06-greeting": true,
+        "ta-07-just-the-answer": true,
+        "ta-08-outside-material": false,
+        "ta-09-misconception": true,
+        "ta-10-elevation": true
+      }
+    },
+    "tutor.teach": {
+      "prompt": "tutor.teach@1",
+      "passed": 9,
+      "total": 10,
+      "cases": {
+        "tt-01-cos60": true,
+        "tt-02-wrong-check": false,
+        "tt-03-right-check": true,
+        "tt-04-dont-get-it": true,
+        "tt-05-elevation": true,
+        "tt-06-prove-identities": true,
+        "tt-07-quiz-me": true,
+        "tt-08-just-answer": true,
+        "tt-09-slower": true,
+        "tt-10-unit-circle": true
+      }
+    },
+    "tutor.coach": {
+      "prompt": "tutor.coach@1",
+      "passed": 7,
+      "total": 10,
+      "cases": {
+        "tc-01-first-turn": true,
+        "tc-02-idk-explain-whole": true,
+        "tc-03-idk-continue": true,
+        "tc-04-right-answer": true,
+        "tc-05-wrong-answer": true,
+        "tc-06-wrong-twice": false,
+        "tc-07-just-tell-me": false,
+        "tc-08-final-step": true,
+        "tc-09-simple-fact": false,
+        "tc-10-thanks": true
+      }
+    }
+  }
+}

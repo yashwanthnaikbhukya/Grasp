@@ -1,4 +1,4 @@
-import type { MasteryState } from '@grasp/schema';
+import type { Mastery, MasteryState } from '@grasp/schema';
 
 /**
  * The mastery engine.
@@ -15,17 +15,11 @@ import type { MasteryState } from '@grasp/schema';
  * not change when that happens. See docs/06-learner-model.md.
  */
 
-export interface MasteryStateRecord {
-  p: number;
-  attempts: number;
-  correct: number;
-  elo: number;
-  stability: number;
-  difficulty: number;
-  lastSeenAt: Date | null;
-  nextDueAt: Date;
-  state: MasteryState;
-}
+/**
+ * The engine's view of a mastery row: `MasterySchema` minus ownership and the
+ * replay watermark. Derived, not re-declared (rule 3).
+ */
+export type MasteryStateRecord = Omit<Mastery, 'userId' | 'conceptId' | 'updatedFromEventSeq'>;
 
 export interface AttemptSignal {
   correct: boolean;
@@ -46,6 +40,31 @@ const ELO_PER_DIFFICULTY = 200;
 
 /** A day, in ms. Stability is expressed in days throughout. */
 const DAY = 86_400_000;
+
+/**
+ * A stored `mastery` row → the engine's record. One reading of the row, shared by
+ * the attempt fold, the feed, the map and slips — four hand-copied versions of
+ * this had already drifted (two defaulted `state` to 'learning', one to 'unseen').
+ * Pure: missing fields fall back to the same defaults `initialMastery` uses.
+ */
+export function masteryFromDoc(
+  doc: Record<string, unknown> | null | undefined,
+  now: Date,
+): MasteryStateRecord {
+  if (!doc) return initialMastery(now);
+  const date = (v: unknown): Date | null => (v instanceof Date ? v : v ? new Date(String(v)) : null);
+  return {
+    p: Number(doc.p ?? 0),
+    attempts: Number(doc.attempts ?? 0),
+    correct: Number(doc.correct ?? 0),
+    elo: Number(doc.elo ?? START_ELO),
+    stability: Number(doc.stability ?? 1),
+    difficulty: Number(doc.difficulty ?? 0),
+    lastSeenAt: date(doc.lastSeenAt),
+    nextDueAt: date(doc.nextDueAt) ?? now,
+    state: (doc.state as MasteryState | undefined) ?? 'learning',
+  };
+}
 
 export function initialMastery(now: Date): MasteryStateRecord {
   return {

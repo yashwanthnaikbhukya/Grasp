@@ -1,5 +1,5 @@
 import type { LearnerProfile } from '@grasp/schema';
-import { stageLabel } from '@grasp/schema';
+import { stageLabel, subjectName } from '@grasp/schema';
 
 /**
  * The learner card — roughly 300 tokens of hand-formatted prose describing who
@@ -122,9 +122,15 @@ export function buildLearnerCard(input: LearnerCardInput): string {
   } else if (!p.inFormalEducation) {
     where.push('Studying independently, not in formal education');
   }
-  const subjectPart = input.curriculumNames?.length
-    ? input.curriculumNames.join(', ')
-    : p.subjects.join(', ');
+  // Programmes now span many subjects (ADR 0008), so name both: "B.Tech / B.E.
+  // — studying Operating Systems, Compiler Design". Subject names, not ids.
+  const subjects = p.subjects.map(subjectName);
+  const subjectPart = [
+    input.curriculumNames?.length ? input.curriculumNames.join(', ') : '',
+    subjects.length ? `Studying ${subjects.join(', ')}` : '',
+  ]
+    .filter(Boolean)
+    .join(' — ');
   const opening = [where.join(' '), subjectPart].filter(Boolean).join('. ');
   if (opening) lines.push(`${opening}.`);
 
@@ -144,13 +150,19 @@ export function buildLearnerCard(input: LearnerCardInput): string {
   }
 
   // --- language ------------------------------------------------------------
+  //
+  // Always stated, English included. Silence was read as permission: a Class 10
+  // learner in India who chose English, no mixing, got a reply in Hindi — the
+  // prompt's Hinglish guidance plus `region: IN` filled the gap. Names, not
+  // codes, because "Explain in hi" is a weaker instruction than "in Hindi".
+  const instruction = languageName(p.language.instruction);
   if (p.language.codeSwitch) {
     lines.push(
-      `Explain in ${p.language.instruction}, mixing in ${p.language.codeSwitch} where it reads ` +
-        `more naturally; keep technical terms in ${p.language.instruction}.`,
+      `Explain in ${instruction}, mixing in ${languageName(p.language.codeSwitch)} where it ` +
+        `reads more naturally; keep technical terms in ${instruction}.`,
     );
-  } else if (p.language.instruction !== 'en') {
-    lines.push(`Explain in ${p.language.instruction}.`);
+  } else {
+    lines.push(`Explain in ${instruction} only — do not switch language unless they do.`);
   }
 
   // --- notation ------------------------------------------------------------
@@ -199,4 +211,13 @@ export function buildLearnerCard(input: LearnerCardInput): string {
   }
 
   return lines.join('\n');
+}
+
+/** `hi` → "Hindi". Falls back to the code itself if the runtime has no name for it. */
+function languageName(code: string): string {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) ?? code;
+  } catch {
+    return code;
+  }
 }

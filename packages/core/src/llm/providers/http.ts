@@ -44,6 +44,16 @@ export async function postJson(
           retryAfterMs: Number.isFinite(retryAfter) ? retryAfter * 1000 : undefined,
         });
       }
+      // Groq answers 400 "Failed to generate JSON" when *its model* produced
+      // output that broke the schema it was given. That is a model failure, not
+      // a malformed request from us — fail over rather than give up (seen on
+      // slip.classify, 2026-11-08). Not a health failure, so no cooldown.
+      if (res.status === 400 && /json_validate_failed|failed to generate json/i.test(text)) {
+        throw new ProviderTransientError(`${opts.provider} 400: model output failed the schema`, {
+          ...meta,
+          kind: 'model-output',
+        });
+      }
       // The body is the whole diagnostic for a 4xx — a bare status tells you
       // that the request was malformed but not which part.
       throw new ProviderRequestError(

@@ -101,6 +101,10 @@ Bad, accepted:
 - **Someone must author the curriculum mappings.** Mitigated: mappings are cheap
   (a model drafts them, a human checks `inScope` and `sequenceIndex`) and only the
   curricula you actually serve need them.
+  *Amended by [ADR 0007](0007-llm-authored-concept-graph.md): nothing about the
+  curriculum is hand-authored — mappings are model-drafted like the graph, and
+  human review is an audit, not a step on the critical path. As of 2026-11-08,
+  mappings are seeded but nothing reads them yet.*
 - **Canonical naming needs a decision per concept.** We use canonical
   international-English names with `aliases[]` carrying every local variant, and
   the alias list feeds both retrieval and concept tagging. Aliases now do real

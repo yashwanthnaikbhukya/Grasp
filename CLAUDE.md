@@ -17,6 +17,7 @@ it is wrong — regardless of whether it works.
 | Mastery, scheduling, events | [docs/06-learner-model.md](docs/06-learner-model.md) |
 | Anything curriculum / stage / locale shaped | [docs/10-onboarding.md](docs/10-onboarding.md) + [ADR 0006](docs/adr/0006-curriculum-agnostic-concepts.md) |
 | Deciding what to build next | [docs/07-phases.md](docs/07-phases.md) |
+| A learner-facing screen, navigation, copy, a11y | [docs/11-experience.md](docs/11-experience.md) |
 | Code style, tests, evals | [docs/09-conventions.md](docs/09-conventions.md) |
 
 Decisions that are settled (do not relitigate without an ADR):
@@ -36,8 +37,9 @@ Decisions that are settled (do not relitigate without an ADR):
    that duplicates a Zod schema.
 4. **`events` is append-only.** Never update or delete an event. Mastery is
    derived state and must be rebuildable by replaying the log.
-5. **Never an LLM call in the Reps swipe path.** Cards are pre-generated into
-   Redis. If a card render awaits a model, that's a bug.
+5. **Never an LLM call in the Reps swipe path.** Cards are generated and verified
+   offline into the question bank (Redis pre-generation is planned, Phase 2). If
+   a card render awaits a model, that's a bug.
 6. **No unverified question reaches a learner.** `questions.verificationStatus`
    must be `verified` before a card can be served.
 7. **Retrieval is always hybrid + reranked.** Vector-only retrieval fails on
@@ -91,16 +93,25 @@ scripts/            One-shot operational scripts.
 
 ```bash
 pnpm dev              # run the web app
-pnpm check            # typecheck + lint everything
+pnpm check            # typecheck + Biome lint + hard-rule boundary check (what CI runs, with tests)
+pnpm lint             # Biome only
+pnpm lint:boundaries  # rules 1, 10 and package direction, enforced in CI
 pnpm test             # unit tests (vitest)
 pnpm setup:check      # which services/keys are wired, which aren't
-pnpm db:indexes       # create/update all Mongo indexes (idempotent)
+pnpm db:indexes       # create/update all Mongo + Atlas Search indexes (idempotent)
+pnpm retrieval:isolation  # security check: other learners' chunks never reach yours
+pnpm eval             # model-quality golden sets (--task=, --compare, --update-baseline)
 ```
 
 ## Current phase
 
-**Phase 0 — Foundations.** See [docs/07-phases.md](docs/07-phases.md) for the
-exit gate. Do not start Phase 1 work until Phase 0's gate passes.
+**Phase H — Hardening.** Gate 0 passed on 2026-11-08. Work had run ahead of the
+gates — Ask, Reps, Slips and Map work end to end, but nothing after Gate 0 has
+passed — so the plan now closes that debt first. Order: Phase H (event-log
+integrity first) → 0.4 eval harness → Gate 1 with the experience track →
+Gate R (first real learner) → Gate 2. No new surface (Snap, Duel) before Gate 2.
+[docs/07-phases.md](docs/07-phases.md) — "Where things stand" — is the source of
+truth.
 
 ## When you change something structural
 

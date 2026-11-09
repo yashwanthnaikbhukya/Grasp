@@ -160,6 +160,9 @@ export async function ingestMarkdown(args: IngestArgs): Promise<IngestResult> {
     embedding: vectors[i] ?? [],
     conceptIds: tagsPerChunk[i] ?? [],
     curriculumIds: args.curriculumIds ?? [],
+    // Indexed so retrieval can keep curriculum-neutral content in scope *inside*
+    // $vectorSearch, which cannot evaluate `$size` (retrieval/retrieve.ts).
+    curriculumNeutral: (args.curriculumIds ?? []).length === 0,
     subject: args.subject,
     stageRange: args.stageRange ?? null,
     language,

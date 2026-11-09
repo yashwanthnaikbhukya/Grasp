@@ -1,278 +1,3044 @@
 {
-  "_comment": [
-    "Curriculum overlays on the universal concept graph. See docs/adr/0006-curriculum-agnostic-concepts.md.",
-    "",
-    "This is data, not logic — adding a curriculum is adding a row. Only the curricula",
-    "you actually serve need concept mappings; an unmapped concept degrades to the",
-    "universal default rather than disappearing.",
-    "",
-    "regions: ['*'] means genuinely international (IB, Cambridge).",
-    "stageRange uses the normalized ladder in packages/schema/src/stage.ts —",
-    "stage 10 is Class 10 (IN) / Grade 10 (US) / Year 11 (GB) / MYP 5 (IB).",
-    "",
-    "notation only needs the fields that deviate from the schema defaults.",
-    "It is not cosmetic: 'trapezoid' denotes different shapes in US and UK English."
-  ],
-
+  "_comment": "Programmes learners pick at onboarding — school boards, entrance exams, university coursework, professional qualifications and competitions (ADR 0008). Ids are stable: profiles and indexed chunks reference them, which is why some older ids end in -math although the programme now offers every subject. Subjects are ids from packages/schema/src/subjects.ts. Adding a programme is adding a row; `pnpm db:seed:curricula` loads it.",
   "curricula": [
     {
       "_id": "self-study",
       "name": "Self-study / not listed",
       "authority": "None",
-      "regions": ["*"],
-      "subject": "mathematics",
-      "stageRange": { "min": 1, "max": 14 },
+      "regions": [
+        "*"
+      ],
+      "kind": "self-study",
+      "subjects": [
+        "mathematics",
+        "science",
+        "english-language",
+        "programming",
+        "economics",
+        "history"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 18
+      },
       "language": "en",
       "notation": {},
       "exam": null,
       "active": true
     },
-
     {
-      "_id": "in-cbse-secondary-math",
-      "name": "CBSE Mathematics (Secondary)",
-      "authority": "Central Board of Secondary Education, India",
-      "regions": ["IN"],
-      "subject": "mathematics",
-      "stageRange": { "min": 6, "max": 10 },
+      "_id": "ib-pyp",
+      "name": "IB Primary Years Programme (PYP)",
+      "authority": "International Baccalaureate Organization",
+      "regions": [
+        "*"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "science",
+        "environmental-science",
+        "social-studies",
+        "art-design",
+        "music",
+        "physical-education"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 5
+      },
       "language": "en",
       "notation": {
-        "reciprocalTrig": "cosec-sec-cot",
-        "quadrilateral": "commonwealth",
-        "digitGrouping": "lakh-crore",
         "spelling": "en-GB"
       },
-      "exam": { "name": "CBSE Class 10 Board", "typicalMonth": 2 },
-      "active": true
-    },
-    {
-      "_id": "in-cbse-senior-math",
-      "name": "CBSE Mathematics (Senior Secondary)",
-      "authority": "Central Board of Secondary Education, India",
-      "regions": ["IN"],
-      "subject": "mathematics",
-      "stageRange": { "min": 11, "max": 12 },
-      "language": "en",
-      "notation": {
-        "reciprocalTrig": "cosec-sec-cot",
-        "quadrilateral": "commonwealth",
-        "digitGrouping": "lakh-crore",
-        "spelling": "en-GB"
-      },
-      "exam": { "name": "CBSE Class 12 Board", "typicalMonth": 3 },
-      "active": true
-    },
-    {
-      "_id": "in-icse-secondary-math",
-      "name": "ICSE Mathematics",
-      "authority": "Council for the Indian School Certificate Examinations",
-      "regions": ["IN"],
-      "subject": "mathematics",
-      "stageRange": { "min": 6, "max": 10 },
-      "language": "en",
-      "notation": {
-        "reciprocalTrig": "cosec-sec-cot",
-        "quadrilateral": "commonwealth",
-        "digitGrouping": "lakh-crore",
-        "spelling": "en-GB"
-      },
-      "exam": { "name": "ICSE Class 10", "typicalMonth": 2 },
-      "active": true
-    },
-    {
-      "_id": "in-jee-math",
-      "name": "JEE Mathematics",
-      "authority": "National Testing Agency, India",
-      "regions": ["IN"],
-      "subject": "mathematics",
-      "stageRange": { "min": 11, "max": 12 },
-      "language": "en",
-      "notation": {
-        "reciprocalTrig": "cosec-sec-cot",
-        "quadrilateral": "commonwealth",
-        "digitGrouping": "lakh-crore",
-        "spelling": "en-GB"
-      },
-      "exam": { "name": "JEE Main", "typicalMonth": 1 },
-      "active": true
-    },
-    {
-      "_id": "pk-matric-math",
-      "name": "Matriculation Mathematics",
-      "authority": "Provincial Boards, Pakistan",
-      "regions": ["PK"],
-      "subject": "mathematics",
-      "stageRange": { "min": 9, "max": 10 },
-      "language": "en",
-      "notation": {
-        "reciprocalTrig": "cosec-sec-cot",
-        "quadrilateral": "commonwealth",
-        "digitGrouping": "lakh-crore",
-        "spelling": "en-GB"
-      },
-      "exam": { "name": "Matric Part II", "typicalMonth": 3 },
-      "active": true
-    },
-
-    {
-      "_id": "us-common-core-math",
-      "name": "Common Core Mathematics",
-      "authority": "Common Core State Standards Initiative, USA",
-      "regions": ["US"],
-      "subject": "mathematics",
-      "stageRange": { "min": 6, "max": 12 },
-      "language": "en",
-      "notation": { "units": "mixed" },
       "exam": null,
       "active": true
     },
     {
-      "_id": "us-ap-precalculus",
-      "name": "AP Precalculus",
-      "authority": "College Board, USA",
-      "regions": ["US"],
-      "subject": "mathematics",
-      "stageRange": { "min": 10, "max": 12 },
-      "language": "en",
-      "notation": { "units": "mixed" },
-      "exam": { "name": "AP Precalculus Exam", "typicalMonth": 5 },
-      "active": true
-    },
-
-    {
-      "_id": "gb-gcse-maths",
-      "name": "GCSE Mathematics",
-      "authority": "Ofqual-regulated boards, UK",
-      "regions": ["GB"],
-      "subject": "mathematics",
-      "stageRange": { "min": 8, "max": 10 },
-      "language": "en",
-      "notation": {
-        "reciprocalTrig": "cosec-sec-cot",
-        "quadrilateral": "commonwealth",
-        "spelling": "en-GB"
-      },
-      "exam": { "name": "GCSE Maths", "typicalMonth": 5 },
-      "active": true
-    },
-    {
-      "_id": "gb-a-level-maths",
-      "name": "A-Level Mathematics",
-      "authority": "Ofqual-regulated boards, UK",
-      "regions": ["GB"],
-      "subject": "mathematics",
-      "stageRange": { "min": 11, "max": 12 },
-      "language": "en",
-      "notation": {
-        "reciprocalTrig": "cosec-sec-cot",
-        "quadrilateral": "commonwealth",
-        "spelling": "en-GB"
-      },
-      "exam": { "name": "A-Level Maths", "typicalMonth": 6 },
-      "active": true
-    },
-
-    {
       "_id": "ib-myp-math",
-      "name": "IB MYP Mathematics",
+      "name": "IB Middle Years Programme (MYP)",
       "authority": "International Baccalaureate Organization",
-      "regions": ["*"],
-      "subject": "mathematics",
-      "stageRange": { "min": 6, "max": 10 },
+      "regions": [
+        "*"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "science",
+        "physics",
+        "chemistry",
+        "biology",
+        "english-language",
+        "english-literature",
+        "history",
+        "geography",
+        "design-technology",
+        "art-design",
+        "music",
+        "physical-education",
+        "french",
+        "spanish"
+      ],
+      "stageRange": {
+        "min": 6,
+        "max": 10
+      },
       "language": "en",
-      "notation": { "spelling": "en-GB" },
+      "notation": {
+        "spelling": "en-GB"
+      },
       "exam": null,
       "active": true
     },
     {
       "_id": "ib-dp-math-aa",
-      "name": "IB DP Mathematics: Analysis & Approaches",
+      "name": "IB Diploma Programme (DP)",
       "authority": "International Baccalaureate Organization",
-      "regions": ["*"],
-      "subject": "mathematics",
-      "stageRange": { "min": 11, "max": 12 },
+      "regions": [
+        "*"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "computer-science",
+        "economics",
+        "psychology",
+        "history",
+        "geography",
+        "english-literature",
+        "business-studies",
+        "philosophy",
+        "art-design",
+        "french",
+        "spanish",
+        "environmental-science"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 12
+      },
       "language": "en",
-      "notation": { "spelling": "en-GB" },
-      "exam": { "name": "IB DP Mathematics AA", "typicalMonth": 5 },
+      "notation": {
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "IB Diploma exams",
+        "typicalMonth": 5
+      },
+      "active": true
+    },
+    {
+      "_id": "cambridge-primary-lower-secondary",
+      "name": "Cambridge Primary & Lower Secondary",
+      "authority": "Cambridge Assessment International Education",
+      "regions": [
+        "*"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "science",
+        "computer-science",
+        "art-design",
+        "music",
+        "physical-education"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 8
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": null,
       "active": true
     },
     {
       "_id": "cambridge-igcse-math",
-      "name": "Cambridge IGCSE Mathematics",
+      "name": "Cambridge IGCSE / O Level",
       "authority": "Cambridge Assessment International Education",
-      "regions": ["*"],
-      "subject": "mathematics",
-      "stageRange": { "min": 8, "max": 10 },
+      "regions": [
+        "*"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "further-mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "science",
+        "english-language",
+        "english-literature",
+        "computer-science",
+        "information-technology",
+        "economics",
+        "business-studies",
+        "accountancy",
+        "history",
+        "geography",
+        "sociology",
+        "french",
+        "spanish",
+        "arabic",
+        "art-design"
+      ],
+      "stageRange": {
+        "min": 8,
+        "max": 10
+      },
       "language": "en",
       "notation": {
         "reciprocalTrig": "cosec-sec-cot",
         "quadrilateral": "commonwealth",
         "spelling": "en-GB"
       },
-      "exam": { "name": "Cambridge IGCSE Mathematics", "typicalMonth": 5 },
+      "exam": {
+        "name": "Cambridge IGCSE",
+        "typicalMonth": 5
+      },
       "active": true
     },
-
     {
-      "_id": "ng-waec-math",
-      "name": "WAEC Mathematics",
-      "authority": "West African Examinations Council",
-      "regions": ["NG", "GH"],
-      "subject": "mathematics",
-      "stageRange": { "min": 10, "max": 12 },
+      "_id": "cambridge-as-a-level",
+      "name": "Cambridge International AS & A Level",
+      "authority": "Cambridge Assessment International Education",
+      "regions": [
+        "*"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "further-mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "computer-science",
+        "economics",
+        "business-studies",
+        "accountancy",
+        "psychology",
+        "sociology",
+        "history",
+        "geography",
+        "english-literature",
+        "law"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 12
+      },
       "language": "en",
       "notation": {
         "reciprocalTrig": "cosec-sec-cot",
         "quadrilateral": "commonwealth",
         "spelling": "en-GB"
       },
-      "exam": { "name": "WASSCE Mathematics", "typicalMonth": 5 },
+      "exam": {
+        "name": "Cambridge A Level",
+        "typicalMonth": 5
+      },
+      "active": true
+    },
+    {
+      "_id": "us-ap-precalculus",
+      "name": "Advanced Placement (AP)",
+      "authority": "College Board",
+      "regions": [
+        "*"
+      ],
+      "kind": "school",
+      "subjects": [
+        "calculus",
+        "statistics",
+        "physics",
+        "chemistry",
+        "biology",
+        "environmental-science",
+        "computer-science",
+        "english-language",
+        "english-literature",
+        "history",
+        "political-science",
+        "economics",
+        "psychology",
+        "spanish",
+        "french",
+        "art-design"
+      ],
+      "stageRange": {
+        "min": 9,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "units": "mixed"
+      },
+      "exam": {
+        "name": "AP exams",
+        "typicalMonth": 5
+      },
+      "active": true
+    },
+    {
+      "_id": "sat",
+      "name": "SAT",
+      "authority": "College Board",
+      "regions": [
+        "*"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "mathematics",
+        "verbal-ability",
+        "english-language"
+      ],
+      "stageRange": {
+        "min": 10,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "units": "mixed"
+      },
+      "exam": {
+        "name": "SAT"
+      },
+      "active": true
+    },
+    {
+      "_id": "english-proficiency",
+      "name": "IELTS / TOEFL / Duolingo English Test",
+      "authority": "British Council, IDP, ETS, Duolingo",
+      "regions": [
+        "*"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "english-language",
+        "verbal-ability"
+      ],
+      "stageRange": {
+        "min": 9,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {},
+      "exam": {
+        "name": "English proficiency test"
+      },
+      "active": true
+    },
+    {
+      "_id": "gre",
+      "name": "GRE",
+      "authority": "ETS",
+      "regions": [
+        "*"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "quantitative-aptitude",
+        "verbal-ability",
+        "data-interpretation"
+      ],
+      "stageRange": {
+        "min": 15,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {},
+      "exam": {
+        "name": "GRE General Test"
+      },
+      "active": true
+    },
+    {
+      "_id": "gmat",
+      "name": "GMAT",
+      "authority": "GMAC",
+      "regions": [
+        "*"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "quantitative-aptitude",
+        "verbal-ability",
+        "data-interpretation",
+        "logical-reasoning"
+      ],
+      "stageRange": {
+        "min": 15,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {},
+      "exam": {
+        "name": "GMAT Focus"
+      },
+      "active": true
+    },
+    {
+      "_id": "university-coursework",
+      "name": "College / university coursework",
+      "authority": "Your college or university",
+      "regions": [
+        "*"
+      ],
+      "kind": "university",
+      "subjects": [
+        "mathematics",
+        "statistics",
+        "calculus",
+        "linear-algebra",
+        "discrete-mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "biochemistry",
+        "computer-science",
+        "programming",
+        "data-structures-algorithms",
+        "machine-learning",
+        "data-science",
+        "engineering-mathematics",
+        "electrical-engineering",
+        "economics",
+        "finance",
+        "accountancy",
+        "management",
+        "marketing",
+        "psychology",
+        "sociology",
+        "history",
+        "philosophy",
+        "english-literature",
+        "political-science",
+        "law",
+        "anatomy-physiology",
+        "nursing",
+        "public-health"
+      ],
+      "stageRange": {
+        "min": 13,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {},
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "online-courses",
+      "name": "Online courses & MOOCs (Coursera, edX, Khan Academy…)",
+      "authority": "Various",
+      "regions": [
+        "*"
+      ],
+      "kind": "university",
+      "subjects": [
+        "programming",
+        "data-science",
+        "machine-learning",
+        "web-development",
+        "statistics",
+        "mathematics",
+        "economics",
+        "finance",
+        "marketing",
+        "psychology"
+      ],
+      "stageRange": {
+        "min": 9,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {},
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "tech-interviews",
+      "name": "Technical interviews & coding prep",
+      "authority": "Industry",
+      "regions": [
+        "*"
+      ],
+      "kind": "professional",
+      "subjects": [
+        "data-structures-algorithms",
+        "programming",
+        "databases",
+        "operating-systems",
+        "computer-networks",
+        "machine-learning"
+      ],
+      "stageRange": {
+        "min": 13,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {},
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "acca",
+      "name": "ACCA",
+      "authority": "Association of Chartered Certified Accountants",
+      "regions": [
+        "*"
+      ],
+      "kind": "professional",
+      "subjects": [
+        "accountancy",
+        "finance",
+        "law",
+        "management",
+        "business-studies",
+        "economics"
+      ],
+      "stageRange": {
+        "min": 12,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "ACCA exams"
+      },
+      "active": true
+    },
+    {
+      "_id": "cfa",
+      "name": "CFA Program",
+      "authority": "CFA Institute",
+      "regions": [
+        "*"
+      ],
+      "kind": "professional",
+      "subjects": [
+        "finance",
+        "economics",
+        "accountancy",
+        "statistics",
+        "quantitative-aptitude"
+      ],
+      "stageRange": {
+        "min": 15,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {},
+      "exam": {
+        "name": "CFA exam"
+      },
+      "active": true
+    },
+    {
+      "_id": "olympiad-maths",
+      "name": "Mathematics olympiads (IMO pathway)",
+      "authority": "IMO and national olympiad bodies",
+      "regions": [
+        "*"
+      ],
+      "kind": "competition",
+      "subjects": [
+        "mathematics"
+      ],
+      "stageRange": {
+        "min": 5,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {},
+      "exam": {
+        "name": "Mathematics olympiad"
+      },
+      "active": true
+    },
+    {
+      "_id": "olympiad-science",
+      "name": "Science olympiads (IPhO, IChO, IBO, IAO)",
+      "authority": "International science olympiads",
+      "regions": [
+        "*"
+      ],
+      "kind": "competition",
+      "subjects": [
+        "physics",
+        "chemistry",
+        "biology",
+        "astronomy"
+      ],
+      "stageRange": {
+        "min": 7,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {},
+      "exam": {
+        "name": "Science olympiad"
+      },
+      "active": true
+    },
+    {
+      "_id": "olympiad-informatics",
+      "name": "Informatics olympiad (IOI) & competitive programming",
+      "authority": "IOI, ICPC and others",
+      "regions": [
+        "*"
+      ],
+      "kind": "competition",
+      "subjects": [
+        "data-structures-algorithms",
+        "programming",
+        "discrete-mathematics"
+      ],
+      "stageRange": {
+        "min": 7,
+        "max": 16
+      },
+      "language": "en",
+      "notation": {},
+      "exam": {
+        "name": "Informatics olympiad"
+      },
+      "active": true
+    },
+    {
+      "_id": "in-cbse-primary",
+      "name": "CBSE Primary (Class 1–5)",
+      "authority": "Central Board of Secondary Education, India",
+      "regions": [
+        "IN",
+        "AE",
+        "SA",
+        "QA",
+        "KW",
+        "OM"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "hindi",
+        "environmental-science",
+        "art-design",
+        "physical-education"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 5
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "in-cbse-secondary-math",
+      "name": "CBSE Secondary (Class 6–10)",
+      "authority": "Central Board of Secondary Education, India",
+      "regions": [
+        "IN",
+        "AE",
+        "SA",
+        "QA",
+        "KW",
+        "OM"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "science",
+        "social-studies",
+        "english-language",
+        "english-literature",
+        "hindi",
+        "sanskrit",
+        "information-technology",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "political-science",
+        "economics"
+      ],
+      "stageRange": {
+        "min": 6,
+        "max": 10
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "CBSE Class 10 Board",
+        "typicalMonth": 2
+      },
+      "active": true
+    },
+    {
+      "_id": "in-cbse-senior-math",
+      "name": "CBSE Senior Secondary (Class 11–12)",
+      "authority": "Central Board of Secondary Education, India",
+      "regions": [
+        "IN",
+        "AE",
+        "SA",
+        "QA",
+        "KW",
+        "OM"
+      ],
+      "kind": "school",
+      "subjects": [
+        "physics",
+        "chemistry",
+        "mathematics",
+        "biology",
+        "computer-science",
+        "information-technology",
+        "english-language",
+        "english-literature",
+        "economics",
+        "accountancy",
+        "business-studies",
+        "history",
+        "geography",
+        "political-science",
+        "psychology",
+        "sociology",
+        "hindi",
+        "physical-education",
+        "entrepreneurship"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "CBSE Class 12 Board",
+        "typicalMonth": 3
+      },
+      "active": true
+    },
+    {
+      "_id": "in-icse-secondary-math",
+      "name": "ICSE (Class 6–10)",
+      "authority": "Council for the Indian School Certificate Examinations",
+      "regions": [
+        "IN"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "english-language",
+        "english-literature",
+        "history",
+        "geography",
+        "political-science",
+        "computer-science",
+        "hindi",
+        "economics",
+        "art-design"
+      ],
+      "stageRange": {
+        "min": 6,
+        "max": 10
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "ICSE Class 10",
+        "typicalMonth": 2
+      },
+      "active": true
+    },
+    {
+      "_id": "in-isc",
+      "name": "ISC (Class 11–12)",
+      "authority": "Council for the Indian School Certificate Examinations",
+      "regions": [
+        "IN"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "computer-science",
+        "english-language",
+        "english-literature",
+        "economics",
+        "accountancy",
+        "business-studies",
+        "history",
+        "geography",
+        "political-science",
+        "psychology",
+        "sociology"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "ISC Class 12",
+        "typicalMonth": 2
+      },
+      "active": true
+    },
+    {
+      "_id": "in-state-board",
+      "name": "State Board (any Indian state)",
+      "authority": "State boards of school education, India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "science",
+        "social-studies",
+        "english-language",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "economics",
+        "accountancy",
+        "business-studies",
+        "hindi",
+        "tamil",
+        "telugu",
+        "marathi",
+        "kannada",
+        "malayalam",
+        "bengali",
+        "gujarati",
+        "punjabi",
+        "urdu"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "State board exams",
+        "typicalMonth": 3
+      },
+      "active": true
+    },
+    {
+      "_id": "in-nios",
+      "name": "NIOS (open schooling)",
+      "authority": "National Institute of Open Schooling, India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "science",
+        "social-studies",
+        "english-language",
+        "hindi",
+        "physics",
+        "chemistry",
+        "biology",
+        "economics",
+        "accountancy",
+        "business-studies",
+        "history",
+        "geography",
+        "psychology"
+      ],
+      "stageRange": {
+        "min": 6,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "in-jee-math",
+      "name": "JEE Main & Advanced (engineering)",
+      "authority": "National Testing Agency / IITs, India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "physics",
+        "chemistry",
+        "mathematics"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 13
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "JEE Main",
+        "typicalMonth": 1
+      },
+      "active": true
+    },
+    {
+      "_id": "in-neet-ug",
+      "name": "NEET-UG (medical)",
+      "authority": "National Testing Agency, India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "physics",
+        "chemistry",
+        "biology"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 13
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "NEET-UG",
+        "typicalMonth": 5
+      },
+      "active": true
+    },
+    {
+      "_id": "in-cuet-ug",
+      "name": "CUET-UG (university entrance)",
+      "authority": "National Testing Agency, India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "english-language",
+        "general-knowledge",
+        "quantitative-aptitude",
+        "logical-reasoning",
+        "physics",
+        "chemistry",
+        "mathematics",
+        "biology",
+        "economics",
+        "accountancy",
+        "business-studies",
+        "history",
+        "political-science",
+        "geography"
+      ],
+      "stageRange": {
+        "min": 12,
+        "max": 13
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "CUET-UG",
+        "typicalMonth": 5
+      },
+      "active": true
+    },
+    {
+      "_id": "in-clat",
+      "name": "CLAT (law)",
+      "authority": "Consortium of National Law Universities, India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "verbal-ability",
+        "general-knowledge",
+        "legal-reasoning",
+        "logical-reasoning",
+        "quantitative-aptitude"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 13
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "CLAT",
+        "typicalMonth": 12
+      },
+      "active": true
+    },
+    {
+      "_id": "in-nda",
+      "name": "NDA (defense)",
+      "authority": "Union Public Service Commission, India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "mathematics",
+        "general-knowledge",
+        "english-language",
+        "physics",
+        "chemistry",
+        "history",
+        "geography"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 13
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "NDA",
+        "typicalMonth": 4
+      },
+      "active": true
+    },
+    {
+      "_id": "in-btech",
+      "name": "B.Tech / B.E. (engineering degree)",
+      "authority": "Indian universities (AICTE)",
+      "regions": [
+        "IN"
+      ],
+      "kind": "university",
+      "subjects": [
+        "engineering-mathematics",
+        "physics",
+        "chemistry",
+        "programming",
+        "data-structures-algorithms",
+        "databases",
+        "operating-systems",
+        "computer-networks",
+        "machine-learning",
+        "electrical-engineering",
+        "electronics",
+        "engineering-mechanics",
+        "thermodynamics",
+        "mechanical-engineering",
+        "civil-engineering",
+        "chemical-engineering"
+      ],
+      "stageRange": {
+        "min": 13,
+        "max": 16
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "in-mbbs",
+      "name": "MBBS (medicine)",
+      "authority": "National Medical Commission, India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "university",
+      "subjects": [
+        "anatomy-physiology",
+        "biochemistry",
+        "pathology",
+        "pharmacology",
+        "microbiology",
+        "clinical-medicine",
+        "public-health"
+      ],
+      "stageRange": {
+        "min": 13,
+        "max": 17
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "in-bsc",
+      "name": "B.Sc",
+      "authority": "Indian universities",
+      "regions": [
+        "IN"
+      ],
+      "kind": "university",
+      "subjects": [
+        "physics",
+        "chemistry",
+        "mathematics",
+        "biology",
+        "computer-science",
+        "statistics",
+        "biotechnology",
+        "microbiology",
+        "biochemistry",
+        "environmental-science"
+      ],
+      "stageRange": {
+        "min": 13,
+        "max": 15
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "in-bcom",
+      "name": "B.Com / BBA",
+      "authority": "Indian universities",
+      "regions": [
+        "IN"
+      ],
+      "kind": "university",
+      "subjects": [
+        "accountancy",
+        "finance",
+        "economics",
+        "business-studies",
+        "management",
+        "marketing",
+        "statistics",
+        "law"
+      ],
+      "stageRange": {
+        "min": 13,
+        "max": 15
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "in-ba",
+      "name": "BA (arts & humanities)",
+      "authority": "Indian universities",
+      "regions": [
+        "IN"
+      ],
+      "kind": "university",
+      "subjects": [
+        "history",
+        "political-science",
+        "economics",
+        "english-literature",
+        "psychology",
+        "sociology",
+        "philosophy",
+        "geography",
+        "hindi"
+      ],
+      "stageRange": {
+        "min": 13,
+        "max": 15
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "in-cat",
+      "name": "CAT (MBA entrance)",
+      "authority": "IIMs, India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "quantitative-aptitude",
+        "verbal-ability",
+        "data-interpretation",
+        "logical-reasoning"
+      ],
+      "stageRange": {
+        "min": 15,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "CAT",
+        "typicalMonth": 11
+      },
+      "active": true
+    },
+    {
+      "_id": "in-gate",
+      "name": "GATE (engineering postgraduate)",
+      "authority": "IISc / IITs, India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "engineering-mathematics",
+        "quantitative-aptitude",
+        "data-structures-algorithms",
+        "operating-systems",
+        "computer-networks",
+        "databases",
+        "electrical-engineering",
+        "electronics",
+        "mechanical-engineering",
+        "civil-engineering",
+        "thermodynamics"
+      ],
+      "stageRange": {
+        "min": 15,
+        "max": 17
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "GATE",
+        "typicalMonth": 2
+      },
+      "active": true
+    },
+    {
+      "_id": "in-upsc-cse",
+      "name": "UPSC Civil Services",
+      "authority": "Union Public Service Commission, India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "history",
+        "geography",
+        "political-science",
+        "economics",
+        "general-knowledge",
+        "environmental-science",
+        "logical-reasoning",
+        "sociology",
+        "public-health"
+      ],
+      "stageRange": {
+        "min": 15,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "UPSC Prelims",
+        "typicalMonth": 5
+      },
+      "active": true
+    },
+    {
+      "_id": "in-ssc-banking",
+      "name": "SSC & banking exams",
+      "authority": "Staff Selection Commission, IBPS, SBI",
+      "regions": [
+        "IN"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "quantitative-aptitude",
+        "logical-reasoning",
+        "verbal-ability",
+        "general-knowledge",
+        "data-interpretation"
+      ],
+      "stageRange": {
+        "min": 13,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "in-neet-pg",
+      "name": "NEET-PG",
+      "authority": "National Board of Examinations, India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "anatomy-physiology",
+        "biochemistry",
+        "pathology",
+        "pharmacology",
+        "microbiology",
+        "clinical-medicine",
+        "public-health"
+      ],
+      "stageRange": {
+        "min": 16,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "NEET-PG"
+      },
+      "active": true
+    },
+    {
+      "_id": "in-ca-icai",
+      "name": "Chartered Accountancy (ICAI CA)",
+      "authority": "Institute of Chartered Accountants of India",
+      "regions": [
+        "IN"
+      ],
+      "kind": "professional",
+      "subjects": [
+        "accountancy",
+        "finance",
+        "law",
+        "economics",
+        "statistics",
+        "quantitative-aptitude",
+        "management"
+      ],
+      "stageRange": {
+        "min": 12,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "pk-matric-math",
+      "name": "Matric / SSC (Class 9–10)",
+      "authority": "Provincial and federal boards, Pakistan",
+      "regions": [
+        "PK"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "computer-science",
+        "english-language",
+        "urdu",
+        "religious-studies",
+        "social-studies"
+      ],
+      "stageRange": {
+        "min": 9,
+        "max": 10
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "Matric Part II",
+        "typicalMonth": 3
+      },
+      "active": true
+    },
+    {
+      "_id": "pk-intermediate",
+      "name": "Intermediate / FSc, ICS, ICom (Class 11–12)",
+      "authority": "Provincial and federal boards, Pakistan",
+      "regions": [
+        "PK"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "computer-science",
+        "english-language",
+        "urdu",
+        "accountancy",
+        "economics",
+        "statistics"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "HSSC Part II",
+        "typicalMonth": 5
+      },
+      "active": true
+    },
+    {
+      "_id": "pk-mdcat-ecat",
+      "name": "MDCAT / ECAT (medical & engineering entry)",
+      "authority": "PMDC and UET, Pakistan",
+      "regions": [
+        "PK"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "biology",
+        "chemistry",
+        "physics",
+        "mathematics",
+        "english-language",
+        "logical-reasoning"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 13
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "MDCAT",
+        "typicalMonth": 8
+      },
+      "active": true
+    },
+    {
+      "_id": "bd-ssc-hsc",
+      "name": "SSC & HSC",
+      "authority": "Education boards, Bangladesh",
+      "regions": [
+        "BD"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "bengali",
+        "english-language",
+        "information-technology",
+        "accountancy",
+        "economics",
+        "history",
+        "geography"
+      ],
+      "stageRange": {
+        "min": 6,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "HSC",
+        "typicalMonth": 4
+      },
+      "active": true
+    },
+    {
+      "_id": "bd-admission",
+      "name": "University admission tests (Bangladesh)",
+      "authority": "Bangladeshi universities",
+      "regions": [
+        "BD"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "physics",
+        "chemistry",
+        "mathematics",
+        "biology",
+        "english-language",
+        "general-knowledge"
+      ],
+      "stageRange": {
+        "min": 12,
+        "max": 13
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "np-see-neb",
+      "name": "SEE & NEB (+2)",
+      "authority": "National Examinations Board, Nepal",
+      "regions": [
+        "NP"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "science",
+        "english-language",
+        "social-studies",
+        "physics",
+        "chemistry",
+        "biology",
+        "computer-science",
+        "accountancy",
+        "economics"
+      ],
+      "stageRange": {
+        "min": 6,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "digitGrouping": "lakh-crore",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "lk-gce",
+      "name": "GCE O/L & A/L",
+      "authority": "Department of Examinations, Sri Lanka",
+      "regions": [
+        "LK"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "science",
+        "physics",
+        "chemistry",
+        "biology",
+        "english-language",
+        "information-technology",
+        "accountancy",
+        "economics",
+        "business-studies"
+      ],
+      "stageRange": {
+        "min": 6,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "us-common-core-math",
+      "name": "US K–12 (Common Core & state standards)",
+      "authority": "US states / Common Core",
+      "regions": [
+        "US"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "english-literature",
+        "science",
+        "physics",
+        "chemistry",
+        "biology",
+        "earth-science",
+        "history",
+        "geography",
+        "political-science",
+        "economics",
+        "computer-science",
+        "statistics",
+        "calculus",
+        "spanish",
+        "french",
+        "art-design",
+        "music",
+        "physical-education"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "units": "mixed"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "us-act",
+      "name": "ACT",
+      "authority": "ACT, Inc.",
+      "regions": [
+        "US"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "verbal-ability",
+        "science"
+      ],
+      "stageRange": {
+        "min": 10,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "units": "mixed"
+      },
+      "exam": {
+        "name": "ACT"
+      },
+      "active": true
+    },
+    {
+      "_id": "us-psat",
+      "name": "PSAT / NMSQT",
+      "authority": "College Board",
+      "regions": [
+        "US"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "mathematics",
+        "verbal-ability",
+        "english-language"
+      ],
+      "stageRange": {
+        "min": 9,
+        "max": 11
+      },
+      "language": "en",
+      "notation": {
+        "units": "mixed"
+      },
+      "exam": {
+        "name": "PSAT",
+        "typicalMonth": 10
+      },
+      "active": true
+    },
+    {
+      "_id": "us-ged",
+      "name": "GED / HiSET (high school equivalency)",
+      "authority": "GED Testing Service, ETS",
+      "regions": [
+        "US",
+        "CA"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "science",
+        "social-studies"
+      ],
+      "stageRange": {
+        "min": 9,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {
+        "units": "mixed"
+      },
+      "exam": {
+        "name": "GED"
+      },
+      "active": true
+    },
+    {
+      "_id": "us-mcat",
+      "name": "MCAT",
+      "authority": "AAMC",
+      "regions": [
+        "US",
+        "CA"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "biology",
+        "chemistry",
+        "physics",
+        "biochemistry",
+        "organic-chemistry",
+        "psychology",
+        "sociology",
+        "verbal-ability"
+      ],
+      "stageRange": {
+        "min": 14,
+        "max": 17
+      },
+      "language": "en",
+      "notation": {
+        "units": "mixed"
+      },
+      "exam": {
+        "name": "MCAT"
+      },
+      "active": true
+    },
+    {
+      "_id": "us-lsat",
+      "name": "LSAT",
+      "authority": "LSAC",
+      "regions": [
+        "US",
+        "CA"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "logical-reasoning",
+        "verbal-ability"
+      ],
+      "stageRange": {
+        "min": 15,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {
+        "units": "mixed"
+      },
+      "exam": {
+        "name": "LSAT"
+      },
+      "active": true
+    },
+    {
+      "_id": "us-usmle",
+      "name": "USMLE",
+      "authority": "NBME / FSMB",
+      "regions": [
+        "US"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "anatomy-physiology",
+        "biochemistry",
+        "pathology",
+        "pharmacology",
+        "microbiology",
+        "clinical-medicine"
+      ],
+      "stageRange": {
+        "min": 15,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {
+        "units": "mixed"
+      },
+      "exam": {
+        "name": "USMLE Step 1"
+      },
+      "active": true
+    },
+    {
+      "_id": "us-nclex",
+      "name": "NCLEX (nursing)",
+      "authority": "NCSBN",
+      "regions": [
+        "US",
+        "CA"
+      ],
+      "kind": "professional",
+      "subjects": [
+        "nursing",
+        "pharmacology",
+        "anatomy-physiology"
+      ],
+      "stageRange": {
+        "min": 15,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {
+        "units": "mixed"
+      },
+      "exam": {
+        "name": "NCLEX-RN"
+      },
+      "active": true
+    },
+    {
+      "_id": "us-cpa",
+      "name": "CPA (US)",
+      "authority": "AICPA / NASBA",
+      "regions": [
+        "US"
+      ],
+      "kind": "professional",
+      "subjects": [
+        "accountancy",
+        "finance",
+        "law",
+        "business-studies"
+      ],
+      "stageRange": {
+        "min": 15,
+        "max": 18
+      },
+      "language": "en",
+      "notation": {
+        "units": "mixed"
+      },
+      "exam": {
+        "name": "CPA exam"
+      },
+      "active": true
+    },
+    {
+      "_id": "ca-provincial",
+      "name": "Canadian provincial curriculum",
+      "authority": "Provincial ministries of education, Canada",
+      "regions": [
+        "CA"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "french",
+        "science",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "computer-science",
+        "art-design",
+        "physical-education"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "units": "mixed"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "br-bncc-math",
+      "name": "BNCC (Ensino Fundamental & Médio)",
+      "authority": "Ministério da Educação, Brazil",
+      "regions": [
+        "BR"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "portuguese",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "philosophy",
+        "sociology",
+        "english-language",
+        "spanish",
+        "art-design",
+        "physical-education"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "pt",
+      "notation": {
+        "decimalSeparator": ",",
+        "quadrilateral": "commonwealth"
+      },
+      "exam": {
+        "name": "ENEM",
+        "typicalMonth": 11
+      },
+      "active": true
+    },
+    {
+      "_id": "br-enem-vestibular",
+      "name": "ENEM & vestibulares",
+      "authority": "INEP and universities, Brazil",
+      "regions": [
+        "BR"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "mathematics",
+        "portuguese",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "philosophy",
+        "sociology",
+        "english-language"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 13
+      },
+      "language": "pt",
+      "notation": {
+        "decimalSeparator": ",",
+        "quadrilateral": "commonwealth"
+      },
+      "exam": {
+        "name": "ENEM",
+        "typicalMonth": 11
+      },
+      "active": true
+    },
+    {
+      "_id": "mx-sep-math",
+      "name": "SEP (Primaria, Secundaria, Bachillerato)",
+      "authority": "Secretaría de Educación Pública, Mexico",
+      "regions": [
+        "MX"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "spanish",
+        "science",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "english-language",
+        "art-design",
+        "physical-education"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "es",
+      "notation": {},
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "mx-exani",
+      "name": "EXANI-II & university admission (UNAM, IPN)",
+      "authority": "CENEVAL and universities, Mexico",
+      "regions": [
+        "MX"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "mathematics",
+        "spanish",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "logical-reasoning"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 13
+      },
+      "language": "es",
+      "notation": {},
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "gb-national-curriculum",
+      "name": "National Curriculum (Key Stages 1–3)",
+      "authority": "Department for Education, England",
+      "regions": [
+        "GB"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "science",
+        "history",
+        "geography",
+        "computer-science",
+        "french",
+        "spanish",
+        "german",
+        "art-design",
+        "music",
+        "design-technology",
+        "physical-education",
+        "religious-studies"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 8
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "gb-11-plus",
+      "name": "11+ entrance",
+      "authority": "Grammar and independent schools, UK",
+      "regions": [
+        "GB"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "verbal-ability",
+        "logical-reasoning"
+      ],
+      "stageRange": {
+        "min": 4,
+        "max": 5
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "11+",
+        "typicalMonth": 9
+      },
+      "active": true
+    },
+    {
+      "_id": "gb-gcse-maths",
+      "name": "GCSE",
+      "authority": "Ofqual-regulated boards (AQA, Edexcel, OCR, WJEC)",
+      "regions": [
+        "GB"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "english-literature",
+        "biology",
+        "chemistry",
+        "physics",
+        "science",
+        "computer-science",
+        "history",
+        "geography",
+        "religious-studies",
+        "french",
+        "spanish",
+        "german",
+        "business-studies",
+        "economics",
+        "art-design",
+        "music",
+        "drama",
+        "design-technology",
+        "media-studies",
+        "physical-education",
+        "psychology",
+        "sociology",
+        "latin"
+      ],
+      "stageRange": {
+        "min": 8,
+        "max": 10
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "GCSE",
+        "typicalMonth": 5
+      },
+      "active": true
+    },
+    {
+      "_id": "gb-a-level-maths",
+      "name": "A Level",
+      "authority": "Ofqual-regulated boards (AQA, Edexcel, OCR, WJEC)",
+      "regions": [
+        "GB"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "further-mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "computer-science",
+        "economics",
+        "psychology",
+        "sociology",
+        "history",
+        "geography",
+        "english-literature",
+        "english-language",
+        "business-studies",
+        "accountancy",
+        "law",
+        "philosophy",
+        "religious-studies",
+        "political-science",
+        "art-design",
+        "music",
+        "french",
+        "spanish",
+        "german"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "A Level",
+        "typicalMonth": 6
+      },
+      "active": true
+    },
+    {
+      "_id": "gb-btec",
+      "name": "BTEC & vocational qualifications",
+      "authority": "Pearson and others, UK",
+      "regions": [
+        "GB"
+      ],
+      "kind": "school",
+      "subjects": [
+        "business-studies",
+        "information-technology",
+        "engineering-mechanics",
+        "public-health",
+        "art-design",
+        "media-studies",
+        "physical-education"
+      ],
+      "stageRange": {
+        "min": 9,
+        "max": 13
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "gb-sqa",
+      "name": "Scottish Nationals & Highers (SQA)",
+      "authority": "Scottish Qualifications Authority",
+      "regions": [
+        "GB"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "physics",
+        "chemistry",
+        "biology",
+        "computer-science",
+        "history",
+        "geography",
+        "political-science",
+        "business-studies",
+        "french",
+        "spanish"
+      ],
+      "stageRange": {
+        "min": 9,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "Highers",
+        "typicalMonth": 5
+      },
+      "active": true
+    },
+    {
+      "_id": "gb-ucat",
+      "name": "UCAT (medicine & dentistry admissions)",
+      "authority": "UCAT Consortium",
+      "regions": [
+        "GB",
+        "AU",
+        "NZ"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "verbal-ability",
+        "logical-reasoning",
+        "quantitative-aptitude",
+        "data-interpretation"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "UCAT",
+        "typicalMonth": 7
+      },
+      "active": true
+    },
+    {
+      "_id": "ie-junior-leaving",
+      "name": "Junior & Leaving Certificate",
+      "authority": "State Examinations Commission, Ireland",
+      "regions": [
+        "IE"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "english-literature",
+        "physics",
+        "chemistry",
+        "biology",
+        "science",
+        "history",
+        "geography",
+        "business-studies",
+        "economics",
+        "accountancy",
+        "french",
+        "german",
+        "spanish",
+        "art-design",
+        "music"
+      ],
+      "stageRange": {
+        "min": 6,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "Leaving Certificate",
+        "typicalMonth": 6
+      },
+      "active": true
+    },
+    {
+      "_id": "de-abitur",
+      "name": "Gymnasium & Abitur",
+      "authority": "Kultusministerkonferenz, Germany",
+      "regions": [
+        "DE"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "german",
+        "english-language",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "political-science",
+        "economics",
+        "computer-science",
+        "french",
+        "latin",
+        "art-design",
+        "music"
+      ],
+      "stageRange": {
+        "min": 5,
+        "max": 12
+      },
+      "language": "de",
+      "notation": {
+        "decimalSeparator": ","
+      },
+      "exam": {
+        "name": "Abitur",
+        "typicalMonth": 4
+      },
+      "active": true
+    },
+    {
+      "_id": "fr-bac",
+      "name": "Collège & Lycée (Brevet, Baccalauréat)",
+      "authority": "Ministère de l'Éducation nationale, France",
+      "regions": [
+        "FR"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "french",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "philosophy",
+        "economics",
+        "english-language",
+        "spanish",
+        "german",
+        "computer-science"
+      ],
+      "stageRange": {
+        "min": 6,
+        "max": 12
+      },
+      "language": "fr",
+      "notation": {
+        "decimalSeparator": ","
+      },
+      "exam": {
+        "name": "Baccalauréat",
+        "typicalMonth": 6
+      },
+      "active": true
+    },
+    {
+      "_id": "es-eso-bachillerato",
+      "name": "ESO & Bachillerato (PAU / EBAU)",
+      "authority": "Ministerio de Educación, Spain",
+      "regions": [
+        "ES"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "spanish",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "philosophy",
+        "economics",
+        "english-language",
+        "french",
+        "computer-science"
+      ],
+      "stageRange": {
+        "min": 7,
+        "max": 12
+      },
+      "language": "es",
+      "notation": {
+        "decimalSeparator": ","
+      },
+      "exam": {
+        "name": "PAU / EBAU",
+        "typicalMonth": 6
+      },
+      "active": true
+    },
+    {
+      "_id": "ng-ube",
+      "name": "Basic education (Primary & JSS)",
+      "authority": "Universal Basic Education Commission, Nigeria",
+      "regions": [
+        "NG"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "science",
+        "social-studies",
+        "information-technology",
+        "religious-studies",
+        "art-design"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 9
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "BECE"
+      },
+      "active": true
+    },
+    {
+      "_id": "ng-waec-math",
+      "name": "WAEC (WASSCE)",
+      "authority": "West African Examinations Council",
+      "regions": [
+        "NG",
+        "GH",
+        "SL",
+        "GM",
+        "LR"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "further-mathematics",
+        "english-language",
+        "english-literature",
+        "physics",
+        "chemistry",
+        "biology",
+        "economics",
+        "accountancy",
+        "business-studies",
+        "political-science",
+        "geography",
+        "history",
+        "computer-science",
+        "religious-studies"
+      ],
+      "stageRange": {
+        "min": 10,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "WASSCE",
+        "typicalMonth": 5
+      },
+      "active": true
+    },
+    {
+      "_id": "ng-neco",
+      "name": "NECO SSCE",
+      "authority": "National Examinations Council, Nigeria",
+      "regions": [
+        "NG"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "physics",
+        "chemistry",
+        "biology",
+        "economics",
+        "accountancy",
+        "political-science",
+        "geography",
+        "computer-science"
+      ],
+      "stageRange": {
+        "min": 10,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "NECO SSCE",
+        "typicalMonth": 6
+      },
+      "active": true
+    },
+    {
+      "_id": "ng-jamb",
+      "name": "JAMB UTME (university entrance)",
+      "authority": "Joint Admissions and Matriculation Board, Nigeria",
+      "regions": [
+        "NG"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "english-language",
+        "mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "economics",
+        "political-science",
+        "accountancy",
+        "geography"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 13
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "UTME",
+        "typicalMonth": 4
+      },
+      "active": true
+    },
+    {
+      "_id": "gh-bece",
+      "name": "BECE (Junior High School)",
+      "authority": "West African Examinations Council, Ghana",
+      "regions": [
+        "GH"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "science",
+        "social-studies",
+        "information-technology",
+        "religious-studies"
+      ],
+      "stageRange": {
+        "min": 7,
+        "max": 9
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "BECE",
+        "typicalMonth": 6
+      },
       "active": true
     },
     {
       "_id": "ke-cbc-math",
-      "name": "CBC Mathematics",
-      "authority": "Kenya Institute of Curriculum Development",
-      "regions": ["KE"],
-      "subject": "mathematics",
-      "stageRange": { "min": 6, "max": 12 },
+      "name": "CBC & KCSE",
+      "authority": "Kenya Institute of Curriculum Development / KNEC",
+      "regions": [
+        "KE"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "swahili",
+        "science",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "business-studies",
+        "computer-science",
+        "religious-studies"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
       "language": "en",
-      "notation": { "quadrilateral": "commonwealth", "spelling": "en-GB" },
-      "exam": null,
+      "notation": {
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "KCSE",
+        "typicalMonth": 11
+      },
       "active": true
     },
     {
       "_id": "za-caps-math",
-      "name": "CAPS Mathematics",
+      "name": "CAPS (NSC matric)",
       "authority": "Department of Basic Education, South Africa",
-      "regions": ["ZA"],
-      "subject": "mathematics",
-      "stageRange": { "min": 8, "max": 12 },
+      "regions": [
+        "ZA"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "english-language",
+        "accountancy",
+        "business-studies",
+        "economics",
+        "geography",
+        "history",
+        "information-technology"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
       "language": "en",
-      "notation": { "quadrilateral": "commonwealth", "spelling": "en-GB" },
-      "exam": { "name": "NSC Mathematics", "typicalMonth": 11 },
+      "notation": {
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "NSC",
+        "typicalMonth": 11
+      },
       "active": true
     },
-
+    {
+      "_id": "eg-thanaweya-math",
+      "name": "Thanaweya Amma",
+      "authority": "Ministry of Education, Egypt",
+      "regions": [
+        "EG"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "arabic",
+        "english-language",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "philosophy",
+        "psychology",
+        "french",
+        "german"
+      ],
+      "stageRange": {
+        "min": 10,
+        "max": 12
+      },
+      "language": "ar",
+      "notation": {
+        "quadrilateral": "commonwealth"
+      },
+      "exam": {
+        "name": "Thanaweya Amma",
+        "typicalMonth": 6
+      },
+      "active": true
+    },
+    {
+      "_id": "ae-moe",
+      "name": "UAE Ministry of Education curriculum",
+      "authority": "Ministry of Education, UAE",
+      "regions": [
+        "AE"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "arabic",
+        "english-language",
+        "science",
+        "physics",
+        "chemistry",
+        "biology",
+        "social-studies",
+        "computer-science",
+        "religious-studies"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "ar",
+      "notation": {},
+      "exam": {
+        "name": "EmSAT"
+      },
+      "active": true
+    },
+    {
+      "_id": "sa-moe",
+      "name": "Saudi curriculum (Qudurat, Tahsili)",
+      "authority": "Ministry of Education / Etec, Saudi Arabia",
+      "regions": [
+        "SA"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "arabic",
+        "english-language",
+        "physics",
+        "chemistry",
+        "biology",
+        "religious-studies",
+        "quantitative-aptitude",
+        "verbal-ability"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "ar",
+      "notation": {},
+      "exam": {
+        "name": "Tahsili"
+      },
+      "active": true
+    },
+    {
+      "_id": "tr-yks",
+      "name": "Turkish curriculum (LGS, YKS)",
+      "authority": "MEB and ÖSYM, Türkiye",
+      "regions": [
+        "TR"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "philosophy",
+        "english-language"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "tr",
+      "notation": {
+        "decimalSeparator": ","
+      },
+      "exam": {
+        "name": "YKS",
+        "typicalMonth": 6
+      },
+      "active": true
+    },
     {
       "_id": "id-merdeka-math",
-      "name": "Matematika (Kurikulum Merdeka)",
+      "name": "Kurikulum Merdeka",
       "authority": "Kemendikbudristek, Indonesia",
-      "regions": ["ID"],
-      "subject": "mathematics",
-      "stageRange": { "min": 7, "max": 12 },
+      "regions": [
+        "ID"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "indonesian",
+        "english-language",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "economics",
+        "sociology",
+        "computer-science",
+        "religious-studies"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
       "language": "id",
-      "notation": { "decimalSeparator": ",", "quadrilateral": "commonwealth" },
+      "notation": {
+        "decimalSeparator": ",",
+        "quadrilateral": "commonwealth"
+      },
       "exam": null,
       "active": true
     },
     {
+      "_id": "id-utbk",
+      "name": "UTBK-SNBT (university entrance)",
+      "authority": "SNPMB, Indonesia",
+      "regions": [
+        "ID"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "quantitative-aptitude",
+        "verbal-ability",
+        "logical-reasoning",
+        "indonesian",
+        "english-language",
+        "mathematics"
+      ],
+      "stageRange": {
+        "min": 12,
+        "max": 13
+      },
+      "language": "id",
+      "notation": {
+        "decimalSeparator": ",",
+        "quadrilateral": "commonwealth"
+      },
+      "exam": {
+        "name": "UTBK-SNBT",
+        "typicalMonth": 4
+      },
+      "active": true
+    },
+    {
       "_id": "ph-k12-math",
-      "name": "K to 12 Mathematics",
+      "name": "DepEd K to 12",
       "authority": "Department of Education, Philippines",
-      "regions": ["PH"],
-      "subject": "mathematics",
-      "stageRange": { "min": 7, "max": 12 },
+      "regions": [
+        "PH"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "science",
+        "physics",
+        "chemistry",
+        "biology",
+        "social-studies",
+        "history",
+        "economics",
+        "information-technology",
+        "entrepreneurship"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {},
+      "exam": null,
+      "active": true
+    },
+    {
+      "_id": "ph-college-entrance",
+      "name": "College entrance tests (UPCAT, ACET, DCAT)",
+      "authority": "Philippine universities",
+      "regions": [
+        "PH"
+      ],
+      "kind": "exam",
+      "subjects": [
+        "mathematics",
+        "science",
+        "verbal-ability",
+        "english-language",
+        "logical-reasoning"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 12
+      },
       "language": "en",
       "notation": {},
       "exam": null,
@@ -280,53 +3046,354 @@
     },
     {
       "_id": "vn-math",
-      "name": "Toán (Chương trình GDPT)",
+      "name": "Chương trình GDPT (national curriculum)",
       "authority": "Bộ Giáo dục và Đào tạo, Vietnam",
-      "regions": ["VN"],
-      "subject": "mathematics",
-      "stageRange": { "min": 6, "max": 12 },
+      "regions": [
+        "VN"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "english-language",
+        "computer-science",
+        "economics"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
       "language": "vi",
-      "notation": { "decimalSeparator": "," },
-      "exam": { "name": "Kỳ thi THPT", "typicalMonth": 6 },
+      "notation": {
+        "decimalSeparator": ","
+      },
+      "exam": {
+        "name": "Kỳ thi THPT",
+        "typicalMonth": 6
+      },
       "active": true
     },
     {
-      "_id": "br-bncc-math",
-      "name": "Matemática (BNCC)",
-      "authority": "Ministério da Educação, Brazil",
-      "regions": ["BR"],
-      "subject": "mathematics",
-      "stageRange": { "min": 6, "max": 12 },
-      "language": "pt",
-      "notation": { "decimalSeparator": ",", "quadrilateral": "commonwealth" },
-      "exam": { "name": "ENEM", "typicalMonth": 11 },
+      "_id": "my-kssm-spm",
+      "name": "KSSR / KSSM (SPM)",
+      "authority": "Ministry of Education, Malaysia",
+      "regions": [
+        "MY"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "further-mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "english-language",
+        "history",
+        "geography",
+        "accountancy",
+        "economics",
+        "computer-science",
+        "religious-studies"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 11
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "SPM",
+        "typicalMonth": 11
+      },
       "active": true
     },
     {
-      "_id": "mx-sep-math",
-      "name": "Matemáticas (SEP)",
-      "authority": "Secretaría de Educación Pública, Mexico",
-      "regions": ["MX"],
-      "subject": "mathematics",
-      "stageRange": { "min": 7, "max": 12 },
-      "language": "es",
+      "_id": "my-stpm",
+      "name": "STPM & matriculation",
+      "authority": "Malaysian Examinations Council",
+      "regions": [
+        "MY"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "economics",
+        "accountancy",
+        "business-studies",
+        "english-language"
+      ],
+      "stageRange": {
+        "min": 12,
+        "max": 13
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "STPM",
+        "typicalMonth": 11
+      },
+      "active": true
+    },
+    {
+      "_id": "sg-moe",
+      "name": "MOE (PSLE, O / N Level)",
+      "authority": "Ministry of Education, Singapore",
+      "regions": [
+        "SG"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "science",
+        "physics",
+        "chemistry",
+        "biology",
+        "chinese",
+        "history",
+        "geography",
+        "computer-science",
+        "art-design"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 10
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "O Level",
+        "typicalMonth": 10
+      },
+      "active": true
+    },
+    {
+      "_id": "sg-a-level",
+      "name": "Singapore-Cambridge A Level",
+      "authority": "SEAB, Singapore",
+      "regions": [
+        "SG"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "further-mathematics",
+        "physics",
+        "chemistry",
+        "biology",
+        "economics",
+        "computer-science",
+        "history",
+        "geography",
+        "english-literature"
+      ],
+      "stageRange": {
+        "min": 11,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "A Level",
+        "typicalMonth": 11
+      },
+      "active": true
+    },
+    {
+      "_id": "au-acara",
+      "name": "Australian Curriculum (HSC, VCE, QCE, WACE, SACE)",
+      "authority": "ACARA and state authorities, Australia",
+      "regions": [
+        "AU"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "english-literature",
+        "physics",
+        "chemistry",
+        "biology",
+        "science",
+        "history",
+        "geography",
+        "economics",
+        "business-studies",
+        "legal-reasoning",
+        "computer-science",
+        "psychology",
+        "art-design",
+        "physical-education"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "ATAR / Year 12 exams",
+        "typicalMonth": 10
+      },
+      "active": true
+    },
+    {
+      "_id": "nz-ncea",
+      "name": "NZ Curriculum (NCEA)",
+      "authority": "NZQA, New Zealand",
+      "regions": [
+        "NZ"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "english-language",
+        "physics",
+        "chemistry",
+        "biology",
+        "science",
+        "history",
+        "geography",
+        "economics",
+        "accountancy",
+        "computer-science"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "en",
+      "notation": {
+        "reciprocalTrig": "cosec-sec-cot",
+        "quadrilateral": "commonwealth",
+        "spelling": "en-GB"
+      },
+      "exam": {
+        "name": "NCEA",
+        "typicalMonth": 11
+      },
+      "active": true
+    },
+    {
+      "_id": "cn-gaokao",
+      "name": "Chinese national curriculum (Zhongkao, Gaokao)",
+      "authority": "Ministry of Education, China",
+      "regions": [
+        "CN",
+        "TW",
+        "HK"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "chinese",
+        "english-language",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography",
+        "political-science"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "zh",
       "notation": {},
-      "exam": null,
+      "exam": {
+        "name": "Gaokao",
+        "typicalMonth": 6
+      },
       "active": true
     },
     {
-      "_id": "eg-thanaweya-math",
-      "name": "الرياضيات (Thanaweya Amma)",
-      "authority": "Ministry of Education, Egypt",
-      "regions": ["EG"],
-      "subject": "mathematics",
-      "stageRange": { "min": 10, "max": 12 },
-      "language": "ar",
-      "notation": { "quadrilateral": "commonwealth" },
-      "exam": { "name": "Thanaweya Amma", "typicalMonth": 6 },
+      "_id": "jp-common-test",
+      "name": "Japanese curriculum (Common Test)",
+      "authority": "MEXT / National Center for University Entrance Examinations",
+      "regions": [
+        "JP"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "japanese",
+        "english-language",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "geography"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "ja",
+      "notation": {},
+      "exam": {
+        "name": "Common Test",
+        "typicalMonth": 1
+      },
+      "active": true
+    },
+    {
+      "_id": "kr-csat",
+      "name": "Korean curriculum (Suneung / CSAT)",
+      "authority": "Ministry of Education / KICE, Korea",
+      "regions": [
+        "KR"
+      ],
+      "kind": "school",
+      "subjects": [
+        "mathematics",
+        "korean",
+        "english-language",
+        "physics",
+        "chemistry",
+        "biology",
+        "history",
+        "social-studies"
+      ],
+      "stageRange": {
+        "min": 1,
+        "max": 12
+      },
+      "language": "ko",
+      "notation": {},
+      "exam": {
+        "name": "CSAT",
+        "typicalMonth": 11
+      },
       "active": true
     }
   ],
-
   "mappings": []
 }

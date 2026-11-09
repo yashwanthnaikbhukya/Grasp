@@ -35,12 +35,27 @@ export interface RetrievedChunk {
   score: number;
   sourceId?: string;
   page?: number;
+  /** Came from another curriculum's material because the learner's own had too little. */
+  outsideCurriculum?: boolean;
+  /**
+   * Cosine similarity between the query and this passage, 0–1 in practice.
+   * An absolute signal, unlike `score` (rank-fused, relative to the other
+   * candidates) — what the context broker's relevance gate reads. Absent when
+   * the embedder is down.
+   */
+  similarity?: number;
 }
 
 export interface RetrieveResult {
   chunks: RetrievedChunk[];
-  /** Which path each leg took. `fallback` here means the Atlas index is absent. */
-  legs: { lexical: 'atlas' | 'fallback' | 'skipped'; vector: 'atlas' | 'fallback' | 'skipped' };
+  /**
+   * Which path each leg took. `fallback`: the Atlas index is absent.
+   * `unavailable`: the embedder is down, so the answer is keyword-only.
+   */
+  legs: {
+    lexical: 'atlas' | 'fallback' | 'skipped';
+    vector: 'atlas' | 'fallback' | 'skipped' | 'unavailable';
+  };
   candidateCount: number;
   latencyMs: number;
 }
@@ -63,15 +78,20 @@ export interface RetrieveArgs {
  * The scope filter. A security boundary for the `user`/`session` legs and a
  * relevance filter for the rest, expressed once so no call site can get it wrong.
  *
- * Curriculum-neutral content (`curriculumIds: []`) stays eligible for everyone —
- * most good explanations are.
+ * Curriculum-neutral content stays eligible for everyone — most good
+ * explanations are. It is matched on the indexed `curriculumNeutral` flag, not
+ * `curriculumIds: { $size: 0 }`: `$size` cannot run inside `$vectorSearch`, and
+ * this filter has to run *inside* the search (see `vectorLeg`).
+ *
+ * MQL, used three ways: as the `$vectorSearch` pre-filter, as a `$match` after
+ * both searches (defence in depth), and by the no-index fallback scans.
  */
 export function scopeFilter(args: RetrieveArgs): Document {
   const global: Document = { ownerScope: 'global' };
 
   const curricula = args.profile?.curriculumIds ?? [];
   if (curricula.length > 0) {
-    global.$or = [{ curriculumIds: { $in: curricula } }, { curriculumIds: { $size: 0 } }];
+    global.$or = [{ curriculumIds: { $in: curricula } }, { curriculumNeutral: true }];
   }
   const subjects = args.profile?.subjects ?? [];
   if (subjects.length > 0) {
@@ -83,6 +103,55 @@ export function scopeFilter(args: RetrieveArgs): Document {
   if (args.sessionId) branches.push({ ownerScope: 'session', ownerId: args.sessionId });
 
   return branches.length === 1 ? global : { $or: branches };
+}
+
+/**
+ * The same scope, in Atlas Search operators — `$search` cannot take MQL, so its
+ * `compound.filter` needs this form. Kept beside `scopeFilter` so the two can't
+ * drift apart without the test in retrieve.test.ts noticing.
+ */
+export function searchScopeFilter(args: RetrieveArgs): Document {
+  const globalClauses: Document[] = [{ equals: { path: 'ownerScope', value: 'global' } }];
+
+  const curricula = args.profile?.curriculumIds ?? [];
+  if (curricula.length > 0) {
+    globalClauses.push({
+      compound: {
+        should: [
+          { in: { path: 'curriculumIds', value: curricula } },
+          { equals: { path: 'curriculumNeutral', value: true } },
+        ],
+        minimumShouldMatch: 1,
+      },
+    });
+  }
+  const subjects = args.profile?.subjects ?? [];
+  if (subjects.length > 0) {
+    globalClauses.push({ in: { path: 'subject', value: [...subjects, ''] } });
+  }
+
+  const branches: Document[] = [{ compound: { filter: globalClauses } }];
+  if (args.userId) {
+    branches.push({
+      compound: {
+        filter: [
+          { equals: { path: 'ownerScope', value: 'user' } },
+          { equals: { path: 'ownerId', value: args.userId } },
+        ],
+      },
+    });
+  }
+  if (args.sessionId) {
+    branches.push({
+      compound: {
+        filter: [
+          { equals: { path: 'ownerScope', value: 'session' } },
+          { equals: { path: 'ownerId', value: args.sessionId } },
+        ],
+      },
+    });
+  }
+  return { compound: { should: branches, minimumShouldMatch: 1 } };
 }
 
 function isMissingIndex(e: unknown): boolean {
@@ -158,9 +227,13 @@ async function lexicalLeg(
             index: SEARCH_INDEXES.chunksText,
             compound: {
               must: [{ text: { query: args.query, path: ['text', 'headingPath'] } }],
+              // Scope *inside* the search: filtering after `$limit` would let
+              // other learners' chunks fill the slots and silently cut recall.
+              filter: [searchScopeFilter(args)],
             },
           },
         },
+        // Defence in depth — the security boundary is enforced twice.
         { $match: filter },
         { $limit: limit },
         { $project: { _id: 1, score: { $meta: 'searchScore' } } },
@@ -210,9 +283,16 @@ async function vectorLeg(
   args: RetrieveArgs,
   filter: Document,
   limit: number,
-): Promise<{ ranked: Ranked[]; mode: 'atlas' | 'fallback' }> {
-  const [queryVector] = (await embed({ texts: [args.query], purpose: 'query' })).vectors;
-  if (!queryVector) return { ranked: [], mode: 'fallback' };
+): Promise<{ ranked: Ranked[]; mode: 'atlas' | 'fallback' | 'unavailable'; queryVector?: number[] }> {
+  // The embedder (Ollama today) going down must cost semantic recall, not the
+  // whole answer: the lexical leg still runs, and the bundle says which happened.
+  let queryVector: number[] | undefined;
+  try {
+    [queryVector] = (await embed({ texts: [args.query], purpose: 'query' })).vectors;
+  } catch {
+    return { ranked: [], mode: 'unavailable' };
+  }
+  if (!queryVector) return { ranked: [], mode: 'unavailable' };
 
   const indexes = await availableSearchIndexes();
   const useAtlas = indexes.has(SEARCH_INDEXES.chunksVector);
@@ -229,8 +309,12 @@ async function vectorLeg(
             queryVector,
             numCandidates: limit * 10,
             limit,
+            // Pre-filter: candidates are drawn only from what this learner may
+            // see. Every path here is a `filter` field in the vector index.
+            filter,
           },
         },
+        // Defence in depth — the security boundary is enforced twice.
         { $match: filter },
         { $project: { _id: 1, score: { $meta: 'vectorSearchScore' } } },
       ])
@@ -239,6 +323,7 @@ async function vectorLeg(
     return {
       ranked: rows.map((r) => ({ id: String(r._id), score: Number(r.score ?? 0) })),
       mode: 'atlas',
+      queryVector,
     };
   } catch (e) {
     if (!isMissingIndex(e)) throw e;
@@ -257,11 +342,62 @@ async function vectorLeg(
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
 
-    return { ranked, mode: 'fallback' };
+    return { ranked, mode: 'fallback', queryVector };
   }
 }
 
+/**
+ * Retrieval, preferring the learner's curriculum without being trapped by it.
+ *
+ * ADR 0006: concepts are universal, curricula are overlays. A hard curriculum
+ * filter turned that into "only CBSE learners get a textbook" — the 2026-11-09
+ * test pass found a GCSE learner retrieving 0 chunks from a trigonometry
+ * chapter that is the same maths everywhere. So: search the learner's
+ * curriculum first; if it yields fewer than `topK`, top up from the rest of the
+ * global corpus, ranked after, and mark those `outsideCurriculum` so the tutor
+ * (and the sources panel) can say where they come from.
+ *
+ * Only the curriculum preference relaxes — ownership never does: the top-up
+ * reuses `scopeFilter`, so other learners' uploads stay out exactly as before.
+ */
 export async function retrieve(args: RetrieveArgs): Promise<RetrieveResult> {
+  const started = Date.now();
+  const topK = args.topK ?? 5;
+  const primary = await searchOnce(args);
+  const curricula = args.profile?.curriculumIds ?? [];
+  if (primary.chunks.length >= topK || curricula.length === 0) return primary;
+
+  const relaxed = await searchOnce({
+    ...args,
+    profile: { ...args.profile, curriculumIds: [], subjects: args.profile?.subjects ?? [] },
+  });
+  return {
+    chunks: topUpChunks(primary.chunks, relaxed.chunks, topK),
+    legs: primary.chunks.length > 0 ? primary.legs : relaxed.legs,
+    candidateCount: primary.candidateCount + relaxed.candidateCount,
+    latencyMs: Date.now() - started,
+  };
+}
+
+/**
+ * The learner's own-curriculum results first, then other-curriculum results
+ * (deduplicated, marked) until `topK`. Pure — retrieve.test.ts.
+ */
+export function topUpChunks(
+  own: readonly RetrievedChunk[],
+  other: readonly RetrievedChunk[],
+  topK: number,
+): RetrievedChunk[] {
+  const seen = new Set(own.map((c) => c.chunkId));
+  const extra = other
+    .filter((c) => !seen.has(c.chunkId))
+    .slice(0, Math.max(0, topK - own.length))
+    .map((c) => ({ ...c, outsideCurriculum: true }));
+  return [...own.slice(0, topK), ...extra];
+}
+
+/** One hybrid search under exactly the scope `args` describes. */
+async function searchOnce(args: RetrieveArgs): Promise<RetrieveResult> {
   const started = Date.now();
   const topK = args.topK ?? 5;
   const perLeg = args.perLeg ?? 20;
@@ -314,6 +450,9 @@ export async function retrieve(args: RetrieveArgs): Promise<RetrieveResult> {
           score: f.score,
           sourceId: row.sourceId ? String(row.sourceId) : undefined,
           page: row.page,
+          ...(vector.queryVector && row.embedding?.length
+            ? { similarity: cosine(vector.queryVector, row.embedding) }
+            : {}),
         },
       ];
     }),

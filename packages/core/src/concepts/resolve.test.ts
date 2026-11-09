@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   computeDepth,
   cosine,
+  knownConceptIds,
   normalizeAlias,
   slugify,
   uniqueSlug,
@@ -164,5 +165,35 @@ describe('computeDepth', () => {
       ['b', ['a']],
     ]);
     expect(() => computeDepth(bad, 'a')).not.toThrow();
+  });
+});
+
+describe('knownConceptIds — rule 13 at the boundary', () => {
+  const graph = [
+    { _id: 'sin-cos-identities', name: 'Sine–cosine identities', aliases: ['pythagorean identity'] },
+    { _id: 'trig-ratios', name: 'Trigonometric ratios', aliases: ['sohcahtoa'] },
+  ];
+
+  it('keeps ids that exist', () => {
+    expect(knownConceptIds(['trig-ratios'], graph)).toEqual(['trig-ratios']);
+  });
+
+  it('maps a name or alias the model used instead of the id', () => {
+    expect(knownConceptIds(['Pythagorean Identity', 'SOHCAHTOA'], graph)).toEqual([
+      'sin-cos-identities',
+      'trig-ratios',
+    ]);
+    expect(knownConceptIds(['Trigonometric ratios'], graph)).toEqual(['trig-ratios']);
+  });
+
+  it('drops what matches nothing — never invents a node', () => {
+    expect(knownConceptIds(['made-up-concept', 'sin-cos-identity'], graph)).toEqual([]);
+  });
+
+  it('de-duplicates and keeps order', () => {
+    expect(knownConceptIds(['trig-ratios', 'sohcahtoa', 'sin-cos-identities'], graph)).toEqual([
+      'trig-ratios',
+      'sin-cos-identities',
+    ]);
   });
 });

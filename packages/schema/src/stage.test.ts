@@ -44,6 +44,12 @@ describe('stage ladder', () => {
     expect(stageLabel(10, 'JP')).toBe('高校1年');
   });
 
+  it('renumbers the Spanish and Korean ladders at their school boundaries', () => {
+    expect(stageLabel(7, 'ES')).toBe('1º ESO');
+    expect(stageLabel(11, 'ES')).toBe('1º Bachillerato');
+    expect(stageLabel(10, 'KR')).toBe('고등학교 1학년');
+  });
+
   it('names the French ladder rather than numbering it', () => {
     expect(stageLabel(9, 'FR')).toBe('Troisième');
     expect(stageLabel(10, 'FR')).toBe('Seconde');
@@ -58,14 +64,24 @@ describe('stage ladder', () => {
 
   it('handles the ends of the ladder without producing "Grade 0"', () => {
     expect(stageLabel(0, 'US')).toBe('Pre-primary');
-    expect(stageLabel(13, 'IN')).toBe('Undergraduate');
-    expect(stageLabel(STAGE_MAX, 'GB')).toBe('Postgraduate');
+    expect(stageLabel(STAGE_MAX, 'GB')).toBe('Doctorate (PhD)');
+    expect(stageLabel(17, 'IN')).toBe("Master's");
+  });
+
+  it('carries on through college and university, named the local way', () => {
+    expect(stageLabel(13, 'US')).toBe('College freshman');
+    expect(stageLabel(16, 'US')).toBe('College senior');
+    expect(stageLabel(13, 'IN')).toBe('College year 1 (UG)');
+    expect(stageLabel(14, 'GB')).toBe('University year 2');
+    expect(stageLabel(15, 'ZZ')).toBe('University year 3');
+    expect(typicalAgeForStage(13)).toEqual({ min: 18, max: 19 });
   });
 
   it('gives every supported region a full, non-empty, uniquely-labelled picker', () => {
     for (const region of supportedRegions()) {
       const opts = stageOptions(region);
-      expect(opts.length, region).toBe(13);
+      expect(opts.length, region).toBe(STAGE_MAX);
+      expect(opts.filter((o) => o.band === 'school').length, region).toBe(12);
       expect(opts.every((o) => o.label.length > 0), region).toBe(true);
       // Duplicate labels in a picker are unusable — two rows reading the same.
       const labels = new Set(opts.map((o) => o.label));

@@ -55,15 +55,19 @@ export const env = {
 
   gemini: {
     apiKey: get('GEMINI_API_KEY'),
-    modelFast: get('GEMINI_MODEL_FAST', 'gemini-2.0-flash-lite'),
-    modelMid: get('GEMINI_MODEL_MID', 'gemini-2.0-flash'),
-    modelBest: get('GEMINI_MODEL_BEST', 'gemini-2.5-flash'),
+    // Defaults match .env.example. `mid` is deliberately the lightest model that
+    // answers well — free-tier limits are per model and far higher for
+    // flash-lite (measured choice, 2026-11-08; see .env.example).
+    modelFast: get('GEMINI_MODEL_FAST', 'gemini-flash-lite-latest'),
+    modelMid: get('GEMINI_MODEL_MID', 'gemini-3.1-flash-lite'),
+    modelBest: get('GEMINI_MODEL_BEST', 'gemini-pro-latest'),
   },
 
   groq: {
     apiKey: get('GROQ_API_KEY'),
-    modelFast: get('GROQ_MODEL_FAST', 'llama-3.1-8b-instant'),
-    modelMid: get('GROQ_MODEL_MID', 'llama-3.3-70b-versatile'),
+    // Match .env.example — the models the eval baseline was recorded on.
+    modelFast: get('GROQ_MODEL_FAST', 'openai/gpt-oss-20b'),
+    modelMid: get('GROQ_MODEL_MID', 'openai/gpt-oss-120b'),
   },
 
   openrouter: {

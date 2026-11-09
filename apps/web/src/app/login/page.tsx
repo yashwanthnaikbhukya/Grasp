@@ -3,7 +3,30 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import Link from 'next/link';
+import { GraspLogo } from '@/components/brand/logo';
 import { signIn, signUp } from '@/lib/auth-client';
+
+/**
+ * Say what to do, not just what failed — and say it for the form the learner
+ * is actually on. A sign-up rejected for a short password used to read "That
+ * email and password do not match an account", the sign-in message (found in
+ * the 2026-11-09 test pass).
+ */
+function friendlyAuthError(message: string, signingUp: boolean): string {
+  if (/exist|already/i.test(message)) return 'That email is already registered — sign in instead.';
+  if (signingUp) {
+    if (/password/i.test(message) && /short|least|length|min/i.test(message)) {
+      return 'Use at least 8 characters for your password.';
+    }
+    if (/email/i.test(message) && /invalid/i.test(message)) return 'That email address does not look right.';
+    return message || 'Could not create the account. Try again.';
+  }
+  if (/invalid|credential|password|not found/i.test(message)) {
+    return 'That email and password do not match an account.';
+  }
+  return message || 'Could not sign in. Try again.';
+}
 
 type Mode = 'signin' | 'signup';
 
@@ -12,7 +35,9 @@ function AuthForm() {
   const params = useSearchParams();
   const next = params.get('next') ?? '/app';
 
-  const [mode, setMode] = useState<Mode>('signin');
+  // `/login?mode=signup` opens straight on account creation — the landing page's
+  // "Get started" shouldn't make a new learner find the toggle first.
+  const [mode, setMode] = useState<Mode>(params.get('mode') === 'signup' ? 'signup' : 'signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,15 +58,7 @@ function AuthForm() {
     setBusy(false);
 
     if (result.error) {
-      // Say what to do, not just what failed.
-      const msg = result.error.message ?? 'Something went wrong.';
-      setError(
-        /exist/i.test(msg)
-          ? 'That email is already registered — sign in instead.'
-          : /invalid|credential|password/i.test(msg)
-            ? 'That email and password do not match an account.'
-            : msg,
-      );
+      setError(friendlyAuthError(result.error.message ?? '', signingUp));
       return;
     }
 
@@ -52,7 +69,9 @@ function AuthForm() {
 
   return (
     <main className="wrap rise" style={{ maxWidth: '27rem' }}>
-      <p className="eyebrow">Grasp</p>
+      <Link href="/" className="auth-logo" aria-label="Grasp — home">
+        <GraspLogo size={30} />
+      </Link>
       <h1 style={{ fontSize: '1.75rem', margin: '0 0 var(--s2)' }}>
         {signingUp ? 'Create your account' : 'Welcome back'}
       </h1>

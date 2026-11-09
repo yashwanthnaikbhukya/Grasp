@@ -241,6 +241,26 @@ export function structuralFaults(card: GeneratedCard): string[] {
   if (options.some((o) => !o.text.trim())) faults.push('blank option');
   if (!card.stem.trim()) faults.push('blank stem');
   if (!card.solution.trim()) faults.push('no worked solution');
+  if ([card.stem, card.solution, ...options.map((o) => o.text)].some((t) => CITES_SOURCE.test(t))) {
+    faults.push('refers to a passage or figure the learner never sees');
+  }
 
   return faults;
 }
+
+/**
+ * The generator writes from a source passage; the learner only ever sees the
+ * card. "According to the passage, why…", "In the worked example…" and "the
+ * triangle shown" are unanswerable on their own and read as broken — nine of
+ * thirty generated cards did one of them (2026-11-09 test pass).
+ */
+const CITES_SOURCE = new RegExp(
+  [
+    String.raw`\baccording to the (passage|text|excerpt|extract|reading)\b`,
+    String.raw`\b(the|this|above|given) (passage|excerpt|extract)\b`,
+    String.raw`\bthe (passage|text) (states|says|explains|mentions|describes|notes)\b`,
+    String.raw`\bthe worked example\b|\bthe example (above|below|given)\b`,
+    String.raw`\bin the (figure|diagram|picture)\b|\b(figure|diagram|picture|triangle|graph) (shown|above|below)\b`,
+  ].join('|'),
+  'i',
+);

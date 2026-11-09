@@ -62,7 +62,9 @@ export const TASKS = {
   // ---- Broker -------------------------------------------------------------
   'query.understand': {
     tier: 'fast',
-    prompt: 'query.understand@1',
+    // @2: short replies to the tutor's question are answers; maths words kept
+    // exactly. Chosen over @1 by pnpm eval (docs/07-phases.md § 0.4).
+    prompt: 'query.understand@2',
     schema: QueryUnderstandingSchema,
     maxOutputTokens: 1_500,
     reasoningEffort: 'low',
@@ -76,6 +78,22 @@ export const TASKS = {
     schema: SessionDigestSchema,
     maxOutputTokens: 800,
     timeoutMs: 15_000,
+    cache: false,
+  },
+  /**
+   * Read an attached photo or PDF into text: the transcript the tutor, query
+   * understanding and retrieval all see. Called with `filesRequired`, so only
+   * providers that can open the file are tried (Gemini today). Per-learner, so
+   * never cached.
+   */
+  'attachment.read': {
+    // Transcription, not reasoning — the fast tier is enough. Free-tier Gemini
+    // took 1–12 s for the same call on 2026-11-09 whatever the model or thinking
+    // setting, so the composer shows "Reading…" rather than promising a time.
+    tier: 'fast',
+    prompt: 'attachment.read@1',
+    maxOutputTokens: 4_000,
+    timeoutMs: 60_000,
     cache: false,
   },
   'session.title': {
@@ -96,11 +114,31 @@ export const TASKS = {
     timeoutMs: 60_000,
     cache: false,
   },
-  'tutor.explainAnswer': {
+  /**
+   * The three Ask modes (docs/11-experience.md). Separate tasks so each mode's
+   * prompt version is attributable in the trace. `tutor.reply` stays registered
+   * for old traces; nothing calls it.
+   */
+  'tutor.answer': {
     tier: 'mid',
-    prompt: 'tutor.reply@1',
-    maxOutputTokens: 700,
-    timeoutMs: 30_000,
+    prompt: 'tutor.answer@3',
+    maxOutputTokens: 2_000,
+    timeoutMs: 60_000,
+    cache: false,
+  },
+  'tutor.teach': {
+    tier: 'mid',
+    prompt: 'tutor.teach@3',
+    maxOutputTokens: 2_000,
+    timeoutMs: 60_000,
+    cache: false,
+  },
+  'tutor.coach': {
+    tier: 'mid',
+    prompt: 'tutor.coach@3',
+    // One step per message — but reasoning models spend from the same budget.
+    maxOutputTokens: 1_400,
+    timeoutMs: 45_000,
     cache: false,
   },
 

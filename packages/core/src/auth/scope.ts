@@ -85,6 +85,11 @@ export class ScopedCollection<T extends Document> {
     return this.col.updateOne(this.scoped(filter), patched, opts ?? {});
   }
 
+  /** No upsert: a many-document upsert has no single owner to stamp. */
+  async updateMany(filter: Filter<T>, update: UpdateFilter<T>) {
+    return this.col.updateMany(this.scoped(filter), update);
+  }
+
   async deleteOne(filter: Filter<T>) {
     return this.col.deleteOne(this.scoped(filter));
   }
@@ -102,6 +107,15 @@ export class ScopedCollection<T extends Document> {
   unsafeUnscoped(): Collection<T> {
     return this.col;
   }
+}
+
+type StoredEventDoc = ReturnType<typeof collections.events> extends Collection<infer D> ? D : never;
+
+/** The read half of a `ScopedCollection` — for collections nobody may edit. */
+export interface ScopedReader<T extends Document> {
+  find: ScopedCollection<T>['find'];
+  findOne: ScopedCollection<T>['findOne'];
+  countDocuments: ScopedCollection<T>['countDocuments'];
 }
 
 /**
@@ -157,8 +171,19 @@ export class UserScope {
     return new ScopedCollection(collections.mindmaps(), this.userId);
   }
 
-  events() {
-    return new ScopedCollection(collections.events(), this.userId);
+  /**
+   * Read-only, by construction. `events` is append-only (rule 4) and the only
+   * writer is `emit()` — a scoped `updateOne`/`deleteMany` here would make
+   * editing the log the easy thing to reach for.
+   */
+  events(): ScopedReader<StoredEventDoc> {
+    // Resolved per call, so building the view never touches the database.
+    const col = () => new ScopedCollection(collections.events(), this.userId);
+    return {
+      find: (filter) => col().find(filter),
+      findOne: (filter) => col().findOne(filter),
+      countDocuments: (filter) => col().countDocuments(filter),
+    };
   }
 
   /**

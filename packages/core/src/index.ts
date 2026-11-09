@@ -23,3 +23,7 @@ export * from './learner/index';
 export * from './questions/index';
 export * from './slips/index';
 export * from './map/index';
+export * from './attachments/index';
+export { takeToken, resetRateLimits } from './limits';
+export type { RateDecision } from './limits';
+export * from './eval/index';

@@ -171,7 +171,12 @@ export type DoubtDecomposition = z.infer<typeof DoubtDecompositionSchema>;
 /** `eval.judge` — rubric scoring. Judged by a different family than produced it. */
 export const EvalJudgementSchema = z.object({
   passed: z.boolean(),
-  scores: z.record(z.string(), z.number().min(0).max(1)),
+  /**
+   * A list, not a record: Gemini's structured output cannot express an
+   * open-ended object and returned `{}` for every rubric, failing every case it
+   * judged (seen 2026-11-08). Every provider handles an array of objects.
+   */
+  scores: z.array(z.object({ id: z.string(), score: z.number().min(0).max(1) })),
   reasoning: z.string().max(600),
 });
 export type EvalJudgement = z.infer<typeof EvalJudgementSchema>;

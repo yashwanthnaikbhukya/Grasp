@@ -4,8 +4,11 @@ Everything here has a real free tier. Nothing needs a credit card except
 Cloudflare R2 (which asks for one but does not charge inside the free tier), and
 that isn't needed until Phase 1.
 
-**Only two things block the Phase 0 gate: a Mongo connection string and one
-model key.** Everything else, Ollama included, is Phase 1 — `pnpm setup:check`
+**Two things block the Phase 0 gate: a Mongo connection string and two model
+keys (Gemini + Groq).** The gate forces the primary provider to fail, so a
+second provider must actually succeed — one key cannot pass it. Ollama is listed
+under Phase 1 by `pnpm setup:check`, but Ask, ingestion and concept growth all
+need it today (they embed). Everything else is genuinely later; `setup:check`
 nags you when each becomes relevant.
 
 > Provider dashboards get redesigned. If a menu path below doesn't match what you
@@ -46,14 +49,15 @@ except four values. Open it and look for the `PASTE HERE` block at the top.
 
 ---
 
-## 1 — Ollama (local embeddings) · needed for Phase 1
+## 1 — Ollama (local embeddings) · required for Ask, ingestion, concept growth
 
-This is what makes the project genuinely free: embeddings and reranking run on
-your Mac, unmetered, and no learner text ever leaves the machine.
+This is what makes the project genuinely free: embeddings run on your Mac,
+unmetered, and no learner text ever leaves the machine. (The rerank runs
+in-process; it doesn't use Ollama.)
 
 Not needed for the Phase 0 gate — that exercises the gateway, which never touches
-embeddings. Worth doing now anyway; it's a two-minute install and Phase 1
-ingestion is blocked without it.
+embeddings. Ingestion and concept growth are blocked without it; Ask still
+answers with Ollama down, but keyword-only (weaker on paraphrased questions).
 
 ```bash
 brew install ollama
@@ -125,7 +129,7 @@ pnpm setup:check
 
 ---
 
-## 3 — Gemini API key · required (or Groq)
+## 3 — Gemini API key · required
 
 **Cost: free tier, no card.**
 
@@ -161,7 +165,7 @@ you want in dev. Run it whenever a call 404s with "model not found".
 
 ---
 
-## 4 — Groq API key · strongly recommended
+## 4 — Groq API key · required (the Gate 0 failover target)
 
 > **Groq, not Grok.** `console.groq.com`, keys start with `gsk_`. xAI's Grok
 > (`x.ai`, `xai-...`) is a different service and is not free. Groq is
@@ -193,8 +197,10 @@ free lineup rotates).
 ## 5 — Create the two Atlas Search indexes · required for Phase 1
 
 Regular indexes are created by `pnpm db:indexes`. **Atlas Search and Vector
-Search are separate resources** that the driver cannot create — you make them in
-the Atlas UI once.
+Search are separate resources** — `createIndexes` cannot make them. Create them
+once, either in the Atlas UI (below) or with the driver's `createSearchIndexes`,
+which works on M0 with MongoDB 7.0+ (type `vectorSearch` for 5a, `search` for 5b,
+definitions from `searchIndexDefinitions()` in `@grasp/core`).
 
 First create the collections and regular indexes:
 
@@ -202,7 +208,10 @@ First create the collections and regular indexes:
 pnpm db:indexes
 ```
 
-That command also **prints the exact JSON** for the two search indexes. Then:
+Since 2026-11-08 that command also **creates or updates both search indexes
+itself** through the driver, and backfills derived chunk flags — re-running it is
+safe and reports `unchanged`. The manual route below is the fallback (it prints
+the JSON if the driver path is refused, or with `pnpm db:indexes --print`):
 
 Atlas → your cluster → **Atlas Search** tab → **Create Search Index**.
 
@@ -211,6 +220,10 @@ Atlas → your cluster → **Atlas Search** tab → **Create Search Index**.
 - Type: **Atlas Vector Search** → **JSON Editor**
 - Database/collection: `grasp` / `docChunks`
 - Index name: **`grasp_chunks_vec`** (exact — the code references it)
+
+> **"Please define mappings doc in your index structure"** means the Search Type
+> is set to *Atlas Search* (full-text), which requires a top-level `mappings`
+> key. The JSON below is right — switch the type to **Vector Search**.
 
 ```json
 {
@@ -228,7 +241,9 @@ Atlas → your cluster → **Atlas Search** tab → **Create Search Index**.
 
 `numDimensions` **must** equal `OLLAMA_EMBED_DIM`. The filter paths are what let
 the scope filter run inside the vector search instead of after it — without them
-you'd retrieve then discard, which wrecks recall.
+you'd retrieve then discard, which wrecks recall. *Today the retrieval code still
+post-filters (a `$match` after `$vectorSearch`); using these paths is planned —
+see [05-context-broker.md](05-context-broker.md#4--retrieve-hybrid-then-rerank).*
 
 `curriculumIds` is a filter path because retrieval scopes to the **learner's**
 curricula, read from `users.profile`
@@ -308,19 +323,21 @@ so it's useful from the first minute.
 number to watch is **average failover depth** — a rising one means your primary
 free tier is saturating, and there is no other signal for that.
 
-Expected for Phase 0: Mongo ✓ and at least one provider ✓. Ollama shows under
-Phase 1 and does not block.
+Expected for Phase 0: Mongo ✓ and two providers ✓. Ollama shows under Phase 1
+and does not block the gate (it does block Ask — see §1).
 
 Load the curricula and the concept graph:
 
 ```bash
-pnpm db:seed          # curricula (committed) + your concepts.seed.json
+pnpm db:seed          # curricula + data/concepts.seed.json (both committed)
 ```
 
 `db:seed:curricula` ships ~22 curricula across 15 regions, including the
 `self-study` fallback that a learner with no matching curriculum lands on.
-`db:seed:concepts` needs `data/concepts.seed.json` — the Phase 0 deliverable
-(copy `data/concepts.seed.example.json` and fill it in).
+`db:seed:concepts` loads `data/concepts.seed.json` — an optional bootstrap, not a
+deliverable ([ADR 0007](adr/0007-llm-authored-concept-graph.md)). An empty graph
+is a valid start; ingestion and `pnpm concepts:grow` populate it. The seeder
+embeds every node it writes.
 
 Then the real gate:
 
@@ -335,10 +352,14 @@ rows are green, Phase 0's gate is passed.**
 
 ---
 
-## 8 — Upstash Redis · Phase 1
+> **§8–14 are planned infrastructure.** Except the auth secret (§10), nothing in
+> the code reads these keys yet; `setup:check` reports them so they're ready
+> when the work lands ([07-phases.md](07-phases.md)).
 
-Cache, rate limiting, and the pre-generated card queue. HTTP-based, so it works
-from serverless with no connection pooling.
+## 8 — Upstash Redis · planned (Phase 1)
+
+Cache, rate limiting, and the pre-generated card queue — none of which exist
+yet. HTTP-based, so it works from serverless with no connection pooling.
 
 1. [console.upstash.com](https://console.upstash.com) → **Create Database** →
    Redis → region near your Vercel region → Free tier.
@@ -349,7 +370,7 @@ UPSTASH_REDIS_REST_URL=https://xxx.upstash.io
 UPSTASH_REDIS_REST_TOKEN=Axxx...
 ```
 
-## 9 — Cloudflare R2 · Phase 1
+## 9 — Cloudflare R2 · planned (Phase 1.5)
 
 Attachment storage. 10 GB and **zero egress fees**, which is why it beats S3 here.
 
@@ -371,7 +392,9 @@ R2_BUCKET=grasp-uploads
 Do **not** make the bucket public. Uploads use presigned PUTs; reads go through
 presigned GETs from your server.
 
-## 10 — Auth secret · Phase 1
+## 10 — Auth secret · required
+
+Better Auth signs sessions with it; sign-up and sign-in fail without it.
 
 ```bash
 openssl rand -base64 32
@@ -381,10 +404,12 @@ openssl rand -base64 32
 AUTH_SECRET=<paste>
 ```
 
-## 11 — Inngest · Phase 1
+## 11 — Inngest · planned (Phase 1.5)
 
 Durable step functions for ingestion, card pre-generation, and the study-plan
 agent. Retries and replay for free — this is why it's here instead of cron.
+Today ingestion and card building are CLI scripts (`pnpm ingest`,
+`pnpm cards:build`).
 
 [app.inngest.com](https://app.inngest.com) → new app → **Manage → Keys**.
 
@@ -395,12 +420,13 @@ INNGEST_SIGNING_KEY=signkey-...
 
 Local dev needs no keys — `npx inngest-cli@latest dev` runs a local devserver.
 
-## 12 — Resend · Phase 1 (magic links)
+## 12 — Resend · planned (magic links)
 
-[resend.com/api-keys](https://resend.com/api-keys). Free tier sends from a shared
-domain, which is fine for dev.
+Sign-in is email + password today; magic links and email verification wait on
+this. [resend.com/api-keys](https://resend.com/api-keys). Free tier sends from a
+shared domain, which is fine for dev.
 
-## 13 — PostHog · Phase 2
+## 13 — PostHog · planned (Phase 2)
 
 You need retention curves on the Reps feed from the day it ships.
 [posthog.com](https://posthog.com) → project → **Project API Key**.
@@ -410,7 +436,7 @@ NEXT_PUBLIC_POSTHOG_KEY=phc_...
 NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 ```
 
-## 14 — Pusher · Phase 4
+## 14 — Pusher · planned (Phase 4)
 
 Duel presence only, never game logic ([ADR 0005](adr/0005-duel-is-a-replay.md)).
 [dashboard.pusher.com](https://dashboard.pusher.com) → Channels → new app →
@@ -424,16 +450,17 @@ Everything above is $0. In rough order of what you'll exhaust:
 
 | # | Limit | Symptom | Response |
 | --- | --- | --- | --- |
-| 1 | Hosted model daily/minute quotas | `failoverDepth` climbing in traces | Add the third provider; move tasks down a tier; turn on response caching |
+| 1 | Hosted model daily/minute quotas | `failoverDepth` climbing in traces | Add the third provider; move tasks down a tier; response caching (planned) |
 | 2 | Atlas M0 512 MB | Write errors on ingest | Chunks only in Mongo (files in R2), TTL session chunks, prune `llmCalls` |
 | 3 | Atlas M0 search-index cap | Can't create the third index | Drop cross-session search, or upgrade to M10 |
 | 4 | Upstash daily commands | Rate limiter fails open | Batch card pre-generation; longer cache TTLs |
 | 5 | Inngest step count | Jobs queue | Fewer, coarser steps per job |
 
 **The embedding budget is the real constraint on M0.** 768 floats as BSON doubles
-≈ 6 KB per chunk. 10,000 chunks ≈ 60 MB. That's comfortable for one subject and
-one grade — and it's another reason the narrow scope is a mechanism rather than a
-compromise.
+≈ 6 KB per chunk. 10,000 chunks ≈ 60 MB. That's comfortable for a first corpus of
+one subject and one stage band — and it's another reason the narrow first corpus
+is a mechanism rather than a compromise. (The product's scope is global; only
+what's *ingested* is narrow — [ADR 0006](adr/0006-curriculum-agnostic-concepts.md).)
 
 ---
 
@@ -446,7 +473,8 @@ signs up — write it down now so it isn't rediscovered later.
 - ☐ Move off any model tier whose terms permit training on submitted data
 - ☐ Learner PII (name, phone, school) never enters a prompt — refer to learners
       by opaque id inside the learner card
-- ☐ Rate limits per user on every model-backed route
+- ◐ Rate limits per user on every model-backed route — `/api/chat` has one
+      (in-memory); move to Redis before a multi-instance deploy
 - ☐ R2 bucket confirmed private; presigned URLs short-lived
 - ☐ Retrieval scope filter has a passing integration test proving cross-user
       isolation

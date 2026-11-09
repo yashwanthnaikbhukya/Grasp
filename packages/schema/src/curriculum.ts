@@ -1,14 +1,35 @@
 import { z } from 'zod';
 import { ConceptId } from './common';
 import { Region, Stage, StageRange } from './stage';
+import { SubjectId } from './subjects';
 
 /**
  * A curriculum is an **overlay** on the universal concept graph — it says which
  * concepts are in scope, what they're called locally, and in what order they're
  * taught. It never owns concepts.
  *
+ * Since ADR 0008 a curriculum is a *programme*: a board or school curriculum
+ * (CBSE Senior Secondary, GCSE), an entrance or admissions exam (JEE, NEET-UG,
+ * SAT, GRE), university coursework, a professional qualification (ACCA, CFA), or
+ * a competition — each offering several subjects. Learners pick programmes, then
+ * subjects from the full catalogue (subjects.ts), with the programme's subjects
+ * suggested first.
+ *
  * See docs/adr/0006-curriculum-agnostic-concepts.md.
  */
+
+export const CurriculumKind = z.enum(['school', 'exam', 'university', 'professional', 'competition', 'self-study']);
+export type CurriculumKind = z.infer<typeof CurriculumKind>;
+
+/** Onboarding's section headings, in the order shown. */
+export const CURRICULUM_KIND_NAME: Record<CurriculumKind, string> = {
+  school: 'School boards & curricula',
+  exam: 'Entrance & admission exams',
+  university: 'College & university',
+  professional: 'Professional qualifications',
+  competition: 'Competitions & olympiads',
+  'self-study': 'Something else',
+};
 
 export const CurriculumId = z
   .string()
@@ -47,7 +68,9 @@ export const CurriculumSchema = z.object({
    * such as IB or Cambridge International.
    */
   regions: z.array(z.union([Region, z.literal('*')])).min(1),
-  subject: z.string().min(1),
+  kind: CurriculumKind.default('school'),
+  /** Subjects it offers, as catalogue ids. Suggested at onboarding — never a limit. */
+  subjects: z.array(SubjectId).min(1),
   stageRange: StageRange,
   /** Language of instruction, BCP-47. */
   language: z.string().min(2).default('en'),
@@ -107,3 +130,31 @@ export type CurriculumSeed = z.infer<typeof CurriculumSeedSchema>;
  * `inScope` filtering, which is broader rather than broken.
  */
 export const SELF_STUDY_CURRICULUM_ID = 'self-study';
+
+export interface CurriculumCandidate {
+  id: string;
+  regions: readonly string[];
+  stageMin: number;
+  stageMax: number;
+  kind: CurriculumKind;
+}
+
+/**
+ * The programmes onboarding offers a learner: their region's and the
+ * international ones, that fit their stage (within a year — curricula disagree
+ * by a year all the time), regional first. With no stage (not in formal
+ * education), everything for the region. Self-study is always there.
+ */
+export function curriculumCandidates<C extends CurriculumCandidate>(
+  all: readonly C[],
+  region: string,
+  stage: number | null,
+): C[] {
+  const r = region.toUpperCase();
+  const fits = (c: C) =>
+    c.kind === 'self-study' ||
+    ((c.regions.includes('*') || c.regions.includes(r)) &&
+      (stage === null || (stage >= c.stageMin - 1 && stage <= c.stageMax + 1)));
+  const rank = (c: C) => (c.kind === 'self-study' ? 2 : c.regions.includes('*') ? 1 : 0);
+  return all.filter(fits).sort((a, b) => rank(a) - rank(b));
+}

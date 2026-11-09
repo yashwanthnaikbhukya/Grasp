@@ -15,7 +15,7 @@ import { Region, Stage } from './stage';
  * never breaks it. See docs/10-onboarding.md.
  */
 
-export const GoalKind = z.enum(['exam', 'coursework', 'self-study', 'competition']);
+export const GoalKind = z.enum(['exam', 'coursework', 'self-study', 'competition', 'career']);
 export type GoalKind = z.infer<typeof GoalKind>;
 
 export const LearnerGoal = z.object({

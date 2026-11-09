@@ -36,8 +36,8 @@ substrate. That is the entire design.
 
 | Surface | Job | Primary read | Primary write |
 | --- | --- | --- | --- |
-| **Ask** | Socratic tutor grounded in the learner's syllabus + history | Context broker | Episodes, concept tags |
-| **Reps** | Bite-size swipeable practice, scheduled | `cards/next` | Attempts → mastery |
+| **Ask** | Socratic tutor grounded in the learner's syllabus + history | Context broker | Messages, `doubt.asked` events (episodes planned) |
+| **Reps** | Bite-size swipeable practice, scheduled | `/api/feed` | Attempts → mastery |
 | **Snap** | Photo → guided walkthrough → tomorrow's cards | Broker + vision | Attempts, concept tags |
 | **Duel** | Shared code, frozen question set, compared scores | `questions` | Attempts |
 | **Map** | Concept DAG with mastery heat; mindmaps from any source | `mastery` + graph | Mindmaps |
@@ -81,8 +81,9 @@ different curricula, in different languages, work in the same instance.
 That requires the concept graph to be **universal** and curricula to be
 **overlays** on it ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)).
 `pythagorean-identity` requires `pythagoras-theorem` in every curriculum on
-earth — so the expensive artifact, the prerequisite DAG, is authored once and
-reused everywhere. The second curriculum costs a fraction of the first.
+earth — so the expensive artifact, the prerequisite DAG, is generated once
+(model-proposed, resolver-deduped — [ADR 0007](adr/0007-llm-authored-concept-graph.md))
+and reused everywhere. The second curriculum costs a fraction of the first.
 
 It also requires never storing a local label in a structural field. "Class 10"
 (India), "Grade 10" (US), "Year 11" (UK), and "MYP 5" (IB) are the same age band
@@ -104,7 +105,7 @@ die: retrieval goes mushy, concept tags go noisy, mastery stops predicting
 anything, and there's no way to tell which layer broke.
 
 **Recommended first corpus:** a well-defined secondary-mathematics curriculum
-with clean prerequisite structure. The concept graph you author for it is
+with clean prerequisite structure. The concept graph grown from it is
 mostly reusable for every other maths curriculum, which is the entire point of
 the universal-graph decision.
 

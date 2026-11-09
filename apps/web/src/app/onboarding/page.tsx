@@ -1,7 +1,8 @@
 import { collections } from '@grasp/core';
-import { stageOptions, type Curriculum } from '@grasp/schema';
+import type { Curriculum } from '@grasp/schema';
+import { COUNTRY_CODES, countryName } from '@/lib/countries';
 import { requireUser } from '@/lib/session';
-import { OnboardingFlow } from './flow';
+import { OnboardingFlow, type ProgrammeOption } from './flow';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,37 +10,40 @@ export const dynamic = 'force-dynamic';
  * Onboarding — Phase 1 deliverable 1.0. Spec: docs/10-onboarding.md.
  *
  * Built before chat because the learner card is empty until it exists.
- * Progressive and skippable: three screens capture enough to start, and nothing
- * blocks on completeness.
+ * Progressive and skippable: every screen saves as it goes, and nothing blocks
+ * on completeness.
  */
 export default async function OnboardingPage() {
   const session = await requireUser('/onboarding');
 
-  // Every active curriculum, sent once. A few dozen rows — filtering client-side
-  // as the learner picks a region beats a round trip per keystroke.
+  // Every active programme, sent once — about a hundred small rows. Filtering by
+  // region and stage on the client beats a round trip per tap.
   const curricula = (await collections
     .curricula()
-    .find({ active: true }, { projection: { _id: 1, name: 1, authority: 1, regions: 1, subject: 1, stageRange: 1 } })
+    .find(
+      { active: true },
+      { projection: { _id: 1, name: 1, authority: 1, regions: 1, kind: 1, subjects: 1, stageRange: 1, exam: 1 } },
+    )
     .toArray()) as unknown as Curriculum[];
 
-  return (
-    <OnboardingFlow
-      name={session.name}
-      initial={session.profile}
-      curricula={curricula.map((c) => ({
-        id: String(c._id),
-        name: c.name,
-        authority: c.authority,
-        regions: c.regions,
-        subject: c.subject,
-        stageMin: c.stageRange.min,
-        stageMax: c.stageRange.max,
-      }))}
-      stageLadders={Object.fromEntries(
-        ['IN', 'US', 'GB', 'AU', 'SG', 'NG', 'GH', 'ZA', 'KE', 'BR', 'MX', 'ID', 'PH', 'VN', 'PK', 'BD', 'EG', 'AE', 'CA', 'DE', 'FR', 'JP', 'MY', 'NZ', 'IE', 'XX'].map(
-          (r) => [r, stageOptions(r)],
-        ),
-      )}
-    />
-  );
+  const programmes: ProgrammeOption[] = curricula.map((c) => ({
+    id: String(c._id),
+    name: c.name,
+    authority: c.authority,
+    regions: c.regions,
+    kind: c.kind ?? 'school',
+    subjects: c.subjects ?? [],
+    stageMin: c.stageRange.min,
+    stageMax: c.stageRange.max,
+    exam: c.exam?.name ?? null,
+  }));
+
+  // Named here, once: the server's and the browser's ICU data disagree on a few
+  // names ("Falkland Islands (Islas Malvinas)"), and computing them on both sides
+  // broke hydration.
+  const countries = COUNTRY_CODES.map((code) => ({ code, name: countryName(code) }))
+    .filter((c) => c.name !== c.code)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return <OnboardingFlow name={session.name} initial={session.profile} programmes={programmes} countries={countries} />;
 }

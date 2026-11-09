@@ -87,6 +87,7 @@ export function splitSentences(text: string): string[] {
       .map((s) => s.trim())
       .filter(Boolean)
       .map((s) =>
+        // biome-ignore lint/suspicious/noControlCharactersInRegex: NUL is the deliberate placeholder delimiter — it cannot occur in source text, so a masked span can never collide with real content.
         s.replace(/\u0000(\d+)\u0000/g, (_, i: string) => masked[Number(i)] ?? ''),
       );
   };

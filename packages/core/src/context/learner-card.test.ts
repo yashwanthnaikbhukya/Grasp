@@ -52,8 +52,18 @@ describe('buildLearnerCard', () => {
   it('spells out the code-switching instruction', () => {
     // How a large share of the world studies. Must be an instruction, not a flag.
     const card = buildLearnerCard({ profile: indianStudent, now: NOW });
-    expect(card).toContain('mixing in hi');
-    expect(card).toMatch(/keep technical terms in en/i);
+    expect(card).toContain('mixing in Hindi');
+    expect(card).toMatch(/keep technical terms in English/i);
+  });
+
+  it('states English explicitly — silence let the model answer an English learner in Hindi', () => {
+    const englishOnly = LearnerProfileSchema.parse({
+      ...indianStudent,
+      language: { instruction: 'en', codeSwitch: null },
+    });
+    const card = buildLearnerCard({ profile: englishOnly, now: NOW });
+    expect(card).toMatch(/Explain in English only/);
+    expect(card).not.toMatch(/Hindi/);
   });
 
   it('states notation conventions explicitly', () => {

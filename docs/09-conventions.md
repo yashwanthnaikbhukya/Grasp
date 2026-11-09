@@ -55,12 +55,12 @@ that calculation belongs in `core`.
 These are pure, take no I/O, and are unit-tested hard, because they're where
 correctness actually lives:
 
-- `updateMastery(prev, event, item)`
-- `scheduleNext(mastery, now)`
-- `allocateBudget(profile, components)`
+- `updateMastery(prev, signal, now)` — also computes `stability` / `nextDueAt`
+- `currentP(mastery, now)`
+- `allocateBudget(profile, requested)`
 - `fuseRRF(rankLists)`
-- `composeFeed(pools, config)`
-- `scoreDuel(run, config)`
+- `composeFeed(candidates, states, now, config)`
+- `scoreDuel(run, config)` — *planned, Phase 4*
 
 If one of these grows a database call, that's the bug — pass the data in.
 
@@ -75,20 +75,58 @@ If one of these grows a database call, that's the bug — pass the data in.
 
 Three E2E flows, permanently. More is maintenance you'll resent.
 
-The cross-user retrieval test is a **security** test. It runs in CI and blocking
-it is not negotiable.
+> **Today only the Unit row exists** — `pnpm test` runs the Vitest unit suite,
+> including the `UserScope` cross-user isolation tests, which assert the shape of
+> the query against a mocked collection. Planned, not built yet
+> ([07-phases.md](07-phases.md)): integration tests (Vitest is already set to
+> pick up `*.integration.test.ts` only when run explicitly; none exist), the eval
+> harness (`pnpm eval` is a stub), Playwright (not installed), and CI (there is
+> no workflow ran). **Lint and CI now exist:** `pnpm lint` (Biome, recommended
+> rules, lint only — no reformatting), `pnpm lint:boundaries` (the hard rules a
+> linter can't express: provider calls only in `core/llm`, no package importing
+> the app, no `grade` field), and `.github/workflows/ci.yml` running typecheck,
+> both lints and the unit tests on every PR. Suppressions carry a reason
+> (`// biome-ignore … : why`).
+
+The cross-user retrieval test is a **security** test. Once it exists it runs in
+CI, and blocking it is not negotiable.
 
 ## Evals
 
-Every model task with a schema has a golden set in
-`packages/core/src/eval/golden/<task>.jsonl` — minimum 10 cases, grown from real
-failures.
+Golden sets live in `packages/core/src/eval/golden/<task>.jsonl` — one case per
+line: an input, optional earlier turns, an `expect` block (shapes in
+`@grasp/schema` `eval.ts`) and a `note` saying why the case exists. Shared
+context (the concept catalogue, retrieved chunks, a learner card) is frozen in
+`golden/fixtures/` so scores don't drift as the live graph grows. Built in Phase
+0.4: `query.understand`, `slip.classify`, `card.solve`, `tutor.answer`,
+`tutor.teach`, `tutor.coach` — 10+ cases each, validated by
+`eval/golden.test.ts` in every `pnpm test` (no model calls).
 
 ```bash
-pnpm eval                    # everything
-pnpm eval --task=slip.classify
-pnpm eval --compare=main     # regression vs baseline; CI runs this
+pnpm eval                        # every task with a golden set
+pnpm eval --task=tutor.coach     # one task (comma-separate for several)
+pnpm eval --verbose              # print the model output for every failure
+pnpm eval --compare              # fail on regression vs eval/baseline.json — CI runs this
+pnpm eval --update-baseline      # record this run as the baseline (commit the file)
 ```
+
+How a case is scored:
+
+- **Deterministic first** (`eval/scorers.ts`, unit-tested): intent, concept ids,
+  rewrite wording, root cause, answer equality, question counts, "must not repeat
+  this question". The judge only sees what genuinely needs judgement.
+- **Prose gets a rubric judge** (`eval.judge@1`) run with the producer's provider
+  excluded — and the runner fails the case if the judge ever ran on the same
+  provider. A MUST criterion needs ≥ 0.75.
+- **Inconclusive is not failing.** If every real provider is rate-limited for the
+  task or the judge (after back-off retries), the case is reported as `?` and left
+  out of pass/fail and the gate. Ollama never produces eval answers: it is the
+  offline floor, not a quality target.
+
+The gate (`eval/baseline.ts`, unit-tested): a task regresses when two or more of
+the cases it shares with the baseline flip from pass to fail (one flip is model
+noise). And **a prompt version bump is refused while that task has fewer than 10
+golden cases** — `--compare` enforces the rule rather than trusting it.
 
 Rules:
 
@@ -101,6 +139,9 @@ Rules:
 3. **A regression blocks the merge.** Without this the harness is decoration.
 4. **When you find a real failure, add it to the golden set.** That's how the set
    earns its value.
+5. **Change the case only when the case is wrong** — and say why in its `note`.
+   A failing case that describes a real model weakness stays failing; that is the
+   signal the harness exists to give.
 
 ## Prompts
 
@@ -143,7 +184,9 @@ whole reason for the rule.
 ## Feature flags
 
 Every surface sits behind a flag in `packages/core/src/flags.ts` so half-built
-work can ship to yourself without branching. Default off; flip in `.env.local`.
+work can ship to yourself without branching. Default off (`FLAG_ASK` defaults
+on); flip in `.env.local`. *Today the flags only decide what the home page
+lists — the surface routes and pages don't check them yet (planned).*
 
 ## Adding an ADR
 

@@ -1,10 +1,12 @@
-import type { Intent, LearnerProfile, QueryUnderstanding } from '@grasp/schema';
+import type { ContextBundle, Intent, LearnerProfile, QueryUnderstanding } from '@grasp/schema';
 import { collections } from '../db/collections';
 import { generate } from '../llm/gateway';
-import { loadGraph } from '../concepts/resolve';
+import { knownConceptIds, loadGraph } from '../concepts/resolve';
 import { retrieve, type RetrievedChunk } from '../retrieval/retrieve';
 import { estimateTokens } from '../ingest/chunk';
 import { allocateBudget, BUDGETS, fitItems, type Component } from './budget';
+import { correctIntent } from './intent';
+import { relevantChunks } from './relevance';
 import { buildLearnerCard, type MasteryLine } from './learner-card';
 
 /**
@@ -26,32 +28,18 @@ export interface AssembleArgs {
   signal?: AbortSignal;
 }
 
-export interface ContextBundle {
-  bundleId: string;
-  intent: Intent;
-  rewrittenQuery: string;
-  conceptIds: string[];
-  needsClarification: boolean;
-
-  learnerCard: string;
-  history: { role: 'user' | 'assistant'; text: string }[];
-  digest?: string;
-  retrieved: { citeId: string; chunkId: string; headingPath: string[]; text: string }[];
-
-  budget: {
-    granted: Record<Component, number>;
-    used: Record<Component, number>;
-    shed: Component[];
-    totalUsed: number;
-  };
-  /** citeId → chunkId. Used to verify citations after generation. */
-  citeMap: Record<string, string>;
-  timings: { understand: number; retrieve: number; total: number };
-  retrievalLegs: { lexical: string; vector: string };
-}
+/** Defined once in @grasp/schema (rule 3). */
+export type { ContextBundle };
 
 /** Verbatim turns kept before the digest takes over. */
 const VERBATIM_TURNS = 6;
+/** Concept catalogue entries shown to `query.understand` — enough for one subject. */
+const CATALOGUE_MAX = 400;
+/**
+ * How long Ask waits for `query.understand` before going on without it. Groq's
+ * fast model answers in ~0.5–0.8 s; the 8 s task timeout is for background use.
+ */
+const UNDERSTAND_DEADLINE_MS = 1_500;
 
 export async function assemble(args: AssembleArgs): Promise<ContextBundle> {
   const t0 = Date.now();
@@ -62,8 +50,13 @@ export async function assemble(args: AssembleArgs): Promise<ContextBundle> {
   // break on turn two. One cheap call: rewrite, tag concepts, classify intent.
   const tUnderstand = Date.now();
   const graph = await loadGraph();
-  const catalogue = graph
-    .slice(0, 200)
+  // The learner's subjects, not "the first 200 rows": an arbitrary cut meant a
+  // concept past #200 could never be tagged. Capped for prompt size.
+  const subjects = new Set(args.profile.subjects);
+  const inScope =
+    subjects.size > 0 ? graph.filter((c) => !c.subject || subjects.has(c.subject)) : graph;
+  const catalogue = inScope
+    .slice(0, CATALOGUE_MAX)
     .map((c) => (c.aliases.length ? `${c._id} (${c.aliases.slice(0, 3).join(', ')})` : c._id))
     .join('\n');
 
@@ -73,6 +66,9 @@ export async function assemble(args: AssembleArgs): Promise<ContextBundle> {
     intent: 'explain',
     needsClarification: false,
   };
+  // Whether the question was actually understood, or we fell back to the raw
+  // text. "Tagged with no concept" only means off-topic when it was understood.
+  let understood = false;
 
   try {
     const res = await generate<QueryUnderstanding>({
@@ -83,9 +79,26 @@ export async function assemble(args: AssembleArgs): Promise<ContextBundle> {
         conceptCatalog: catalogue || '(the graph is empty)',
       },
       userId: args.userId,
-      signal: args.signal,
+      // A deadline, not just the task timeout: this runs *before* the first token,
+      // so every millisecond here is time the learner stares at nothing. Past it,
+      // the raw message is used (the tutor still sees the whole conversation).
+      signal: args.signal
+        ? AbortSignal.any([args.signal, AbortSignal.timeout(UNDERSTAND_DEADLINE_MS)])
+        : AbortSignal.timeout(UNDERSTAND_DEADLINE_MS),
     });
-    if (res.data) understanding = res.data;
+    if (res.data) {
+      // Rule 13: the model's tags become graph ids or nothing. These ids boost
+      // retrieval, reach the tutor, and land in the append-only `doubt.asked`
+      // event — a drifted slug there could never be corrected.
+      understanding = {
+        ...res.data,
+        conceptIds: knownConceptIds(res.data.conceptIds, graph),
+        // A real question labelled chitchat would skip retrieval and get a
+        // 1,000-token reply. See intent.ts.
+        intent: correctIntent(args.query, res.data.intent),
+      };
+      understood = true;
+    }
   } catch {
     // A failed rewrite degrades follow-ups but must never block an answer —
     // the raw query is a workable fallback.
@@ -98,6 +111,7 @@ export async function assemble(args: AssembleArgs): Promise<ContextBundle> {
   const tRetrieve = Date.now();
   let chunks: RetrievedChunk[] = [];
   let legs = { lexical: 'skipped', vector: 'skipped' };
+  let relevance = { floor: 0, dropped: 0 };
 
   if (profile.allocated.retrieved > 0) {
     const r = await retrieve({
@@ -108,13 +122,19 @@ export async function assemble(args: AssembleArgs): Promise<ContextBundle> {
       sessionId: args.sessionId,
       topK: 6,
     });
-    chunks = r.chunks;
     legs = r.legs;
+    // Retrieval returns its top k whether or not anything is near the question;
+    // only passages that are actually about it reach the tutor (relevance.ts).
+    const gate = relevantChunks(r.chunks, { understood, conceptCount: understanding.conceptIds.length });
+    chunks = gate.kept;
+    relevance = { floor: gate.floor, dropped: gate.dropped };
   }
   const retrieveMs = Date.now() - tRetrieve;
 
   // --- 5. The learner card -------------------------------------------------
-  // Only concepts this query touches — never the whole mastery table.
+  // Only concepts this query touches — never the whole mastery table. Derived
+  // from the *gated* passages: unrelated ones used to pull their concepts'
+  // mastery in, so a biology question arrived wrapped in trigonometry.
   const relevantConcepts = [
     ...new Set([...understanding.conceptIds, ...chunks.flatMap((c) => c.conceptIds)]),
   ].slice(0, 8);
@@ -126,11 +146,15 @@ export async function assemble(args: AssembleArgs): Promise<ContextBundle> {
           .find({ userId: args.userId, conceptId: { $in: relevantConcepts } } as never)
           .toArray()
       : Promise.resolve([]),
-    collections
-      .misconceptions()
-      .find({ userId: args.userId, resolvedAt: null } as never)
-      .limit(4)
-      .toArray(),
+    // Misconceptions about *this* topic only. Any four unresolved ones, whatever
+    // the question, steered answers toward unrelated material.
+    relevantConcepts.length > 0
+      ? collections
+          .misconceptions()
+          .find({ userId: args.userId, resolvedAt: null, conceptId: { $in: relevantConcepts } } as never)
+          .limit(4)
+          .toArray()
+      : Promise.resolve([]),
     args.profile.curriculumIds.length > 0
       ? collections
           .curricula()
@@ -209,7 +233,10 @@ export async function assemble(args: AssembleArgs): Promise<ContextBundle> {
   const retrieved = keptChunks.map((c, i) => {
     const citeId = `c${i + 1}`;
     citeMap[citeId] = c.chunkId;
-    return { citeId, chunkId: c.chunkId, headingPath: c.headingPath, text: c.text };
+    // Material from outside the learner's curriculum is labelled where both the
+    // tutor and the sources panel will see it.
+    const headingPath = c.outsideCurriculum ? ['Another syllabus', ...c.headingPath] : c.headingPath;
+    return { citeId, chunkId: c.chunkId, headingPath, text: c.text };
   });
 
   return {
@@ -231,6 +258,7 @@ export async function assemble(args: AssembleArgs): Promise<ContextBundle> {
     citeMap,
     timings: { understand: understandMs, retrieve: retrieveMs, total: Date.now() - t0 },
     retrievalLegs: legs,
+    relevance,
   };
 }
 

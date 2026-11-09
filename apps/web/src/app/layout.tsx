@@ -53,13 +53,31 @@ const mono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Grasp',
-  description: 'One learner model, many surfaces.',
+  title: { default: 'Grasp', template: '%s · Grasp' },
+  description:
+    'Study help that knows what you know — a tutor for any subject, practice, a map of ideas and your mistakes, in one place.',
 };
+
+/**
+ * Applied before first paint: the learner's theme choice and whether they keep
+ * the sidebar collapsed (both per-browser, in localStorage). Without this the
+ * page would render in the default and visibly switch after hydration.
+ */
+const BEFORE_PAINT = `try{var d=document.documentElement,t=localStorage.getItem('grasp.theme');if(t==='light'||t==='dark')d.dataset.theme=t;if(localStorage.getItem('grasp.sidebar')==='collapsed')d.dataset.sidebar='collapsed'}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    // The pre-paint script sets data-* on <html>, so the server and client
+    // attributes legitimately differ there.
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable} ${mono.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a fixed, first-party string — no user input reaches it. */}
+        <script dangerouslySetInnerHTML={{ __html: BEFORE_PAINT }} />
+      </head>
       <body>{children}</body>
     </html>
   );

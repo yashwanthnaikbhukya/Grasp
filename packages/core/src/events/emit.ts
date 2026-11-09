@@ -51,23 +51,17 @@ export async function emit(input: EventInput): Promise<EmitResult> {
 
   const seq = await nextSeq();
 
-  const doc = {
-    seq,
-    type: parsed.type,
-    /**
-     * Stored as a string, deliberately.
-     *
-     * Every learner-owned collection is read through `UserScope`, which filters
-     * on a string `userId`. Storing an ObjectId here made events invisible to
-     * every scoped query — they were written correctly and could never be read
-     * back, which would have broken replay silently. One representation, chosen
-     * to match the accessors. See packages/core/src/auth/scope.ts.
-     */
-    userId: parsed.userId,
-    payload: parsed.payload,
-    idempotencyKey: parsed.idempotencyKey,
-    ts,
-  };
+  /**
+   * `userId` is stored as a string, deliberately (it arrives as one from
+   * `EventInputSchema`). Every learner-owned collection is read through
+   * `UserScope`, which filters on a string `userId`; storing an ObjectId here
+   * made events invisible to every scoped query — written correctly, never read
+   * back, which would have broken replay silently. See auth/scope.ts.
+   *
+   * Spread rather than field by field, so the `type` ↔ `payload` pairing of the
+   * discriminated union survives into the stored type.
+   */
+  const doc: StoredEvent = { ...parsed, seq, ts };
 
   try {
     const res = await collections.events().insertOne(doc);

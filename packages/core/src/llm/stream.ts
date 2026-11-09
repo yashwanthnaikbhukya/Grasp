@@ -2,10 +2,12 @@ import { getPrompt } from '@grasp/prompts';
 import type { ProviderName } from '@grasp/schema';
 import { GatewayExhaustedError, ProviderRequestError, ProviderTransientError } from '../errors';
 import { env } from '../env';
-import { chainFor } from './gateway';
+import { chainFor, filesFor, isHealthFailure, noteProviderFailure, noteProviderSuccess } from './gateway';
+import { geminiParts } from './providers/gemini';
+import { tierForLearner } from './budget';
 import { taskConfig, type TaskId } from './registry';
 import { newTraceId, trace } from './trace';
-import type { ChatMessage } from './types';
+import type { ChatMessage, InlineFile } from './types';
 
 /**
  * Streaming generation.
@@ -24,6 +26,12 @@ export interface StreamArgs {
   task: TaskId;
   input: Record<string, unknown>;
   messages?: ChatMessage[];
+  /**
+   * Files for this turn (attached to the rendered message). Optional to the
+   * model: a provider that cannot read them gets the turn without them, so the
+   * caller must also put their transcript in `input`.
+   */
+  files?: InlineFile[];
   userId?: string;
   signal?: AbortSignal;
 }
@@ -36,6 +44,14 @@ export interface StreamChunk {
   error?: string;
   usage?: { inputTokens: number; outputTokens: number };
 }
+
+/**
+ * How long a provider may hold a stream open without sending a single token
+ * before we fail over. An overloaded provider does not always answer 503 — it
+ * can accept the request and then say nothing, and without this deadline the
+ * learner waits forever on a blinking cursor. Capped by the task's `timeoutMs`.
+ */
+const FIRST_TOKEN_TIMEOUT_MS = 10_000;
 
 /** Parse an SSE byte stream into `data:` payload strings. */
 async function* sseLines(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {
@@ -51,8 +67,7 @@ async function* sseLines(body: ReadableStream<Uint8Array>): AsyncGenerator<strin
 
       // SSE events are separated by a blank line; a chunk boundary can land
       // anywhere, so only complete events are emitted.
-      let idx: number;
-      while ((idx = buffer.indexOf('\n')) >= 0) {
+      for (let idx = buffer.indexOf('\n'); idx >= 0; idx = buffer.indexOf('\n')) {
         const line = buffer.slice(0, idx).trim();
         buffer = buffer.slice(idx + 1);
         if (line.startsWith('data:')) yield line.slice(5).trim();
@@ -89,7 +104,7 @@ async function* streamGemini(
     body: JSON.stringify({
       contents: messages.map((m) => ({
         role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }],
+        parts: geminiParts(m),
       })),
       systemInstruction: system ? { parts: [{ text: system }] } : undefined,
       generationConfig: { maxOutputTokens: maxTokens },
@@ -208,11 +223,17 @@ export async function* generateStream(args: StreamArgs): AsyncGenerator<StreamCh
   const rendered = template.render(args.input);
   const traceId = newTraceId();
 
-  const messages: ChatMessage[] = [...(args.messages ?? []), { role: 'user', content: rendered }];
-  const chain = chainFor(cfg.tier, cfg.excludeProviders ? [...cfg.excludeProviders] : []);
+  const turn: ChatMessage[] = [
+    ...(args.messages ?? []),
+    { role: 'user', content: rendered, ...(args.files?.length ? { files: args.files } : {}) },
+  ];
+  // The cost guard: a learner past today's output-token budget is served on the
+  // fast tier. Tutor turns are where per-learner spend lives (llm/budget.ts).
+  const tier = await tierForLearner(cfg.tier, args.userId);
+  const chain = chainFor(tier, cfg.excludeProviders ? [...cfg.excludeProviders] : []);
 
   if (chain.length === 0) {
-    throw new GatewayExhaustedError(`No provider available for tier "${cfg.tier}"`, {
+    throw new GatewayExhaustedError(`No provider available for tier "${tier}"`, {
       task: args.task,
     });
   }
@@ -223,14 +244,25 @@ export async function* generateStream(args: StreamArgs): AsyncGenerator<StreamCh
     const adapter = chain[depth];
     if (!adapter) continue;
 
-    const model = adapter.modelFor(cfg.tier);
+    const model = adapter.modelFor(tier);
     const started = Date.now();
     let emitted = false;
+    const messages = filesFor(turn, adapter);
+
+    // One abort per attempt, fed by three things: the learner's Stop, a
+    // first-token deadline, and the task's overall timeout. Mirrors postJson()
+    // on the non-streaming path, which always had both timeouts.
+    const attempt = new AbortController();
+    const onCallerAbort = () => attempt.abort();
+    args.signal?.addEventListener('abort', onCallerAbort, { once: true });
+    const firstTokenMs = Math.min(FIRST_TOKEN_TIMEOUT_MS, cfg.timeoutMs);
+    const firstTokenTimer = setTimeout(() => attempt.abort(), firstTokenMs);
+    const totalTimer = setTimeout(() => attempt.abort(), cfg.timeoutMs);
 
     try {
       const iter =
         adapter.name === 'gemini'
-          ? streamGemini(model, template.system, messages, cfg.maxOutputTokens, args.signal)
+          ? streamGemini(model, template.system, messages, cfg.maxOutputTokens, attempt.signal)
           : adapter.name === 'ollama'
             ? streamOpenAICompatible(
                 `${env.ollama.baseUrl}/v1`,
@@ -240,7 +272,7 @@ export async function* generateStream(args: StreamArgs): AsyncGenerator<StreamCh
                 template.system,
                 messages,
                 cfg.maxOutputTokens,
-                args.signal,
+                attempt.signal,
               )
             : streamOpenAICompatible(
                 adapter.name === 'groq'
@@ -252,17 +284,19 @@ export async function* generateStream(args: StreamArgs): AsyncGenerator<StreamCh
                 template.system,
                 messages,
                 cfg.maxOutputTokens,
-                args.signal,
+                attempt.signal,
               );
 
       for await (const chunk of iter) {
         if (chunk.type === 'token') {
+          if (!emitted) clearTimeout(firstTokenTimer);
           emitted = true;
           yield chunk;
         } else if (chunk.type === 'done') {
+          noteProviderSuccess(adapter.name, tier);
           void trace({
             task: args.task,
-            tier: cfg.tier,
+            tier: tier,
             provider: adapter.name,
             model,
             promptVersion: cfg.prompt,
@@ -281,12 +315,24 @@ export async function* generateStream(args: StreamArgs): AsyncGenerator<StreamCh
       }
       return;
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      // The learner pressed Stop. That is not a provider failure — failing over
+      // would spend a second provider's quota on an answer nobody is waiting for.
+      if (args.signal?.aborted) return;
+
+      const timedOut = attempt.signal.aborted;
+      const message = timedOut
+        ? emitted
+          ? `timed out mid-answer after ${cfg.timeoutMs} ms`
+          : `no first token within ${firstTokenMs} ms`
+        : e instanceof Error
+          ? e.message
+          : String(e);
       attempts.push(`${adapter.name}: ${message}`);
+      if (timedOut || isHealthFailure(e)) noteProviderFailure(adapter.name, tier);
 
       void trace({
         task: args.task,
-        tier: cfg.tier,
+        tier: tier,
         provider: adapter.name,
         model,
         promptVersion: cfg.prompt,
@@ -295,7 +341,7 @@ export async function* generateStream(args: StreamArgs): AsyncGenerator<StreamCh
         cachedInputTokens: 0,
         latencyMs: Date.now() - started,
         ok: false,
-        errorKind: e instanceof ProviderTransientError ? 'transient' : 'request',
+        errorKind: timedOut || e instanceof ProviderTransientError ? 'transient' : 'request',
         errorMessage: message.slice(0, 300),
         failoverDepth: depth,
         userId: args.userId,
@@ -308,6 +354,10 @@ export async function* generateStream(args: StreamArgs): AsyncGenerator<StreamCh
         return;
       }
       if (e instanceof ProviderRequestError) throw e;
+    } finally {
+      clearTimeout(firstTokenTimer);
+      clearTimeout(totalTimer);
+      args.signal?.removeEventListener('abort', onCallerAbort);
     }
   }
 

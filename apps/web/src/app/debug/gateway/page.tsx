@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import { chainFor, generate, type GenerateResult } from '@grasp/core';
 import type { ProviderName, QueryUnderstanding } from '@grasp/schema';
 
@@ -131,6 +132,9 @@ function Result({
 }
 
 export default async function GatewayDebugPage() {
+  // Second line behind middleware.ts: this page spends real model calls, and a
+  // layout's notFound() does not stop a page rendering in parallel.
+  if (process.env.NODE_ENV === 'production') notFound();
   const chain = chainFor('fast');
   const primary = chain[0]?.name;
 

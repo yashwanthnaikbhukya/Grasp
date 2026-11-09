@@ -1,7 +1,7 @@
 import type { ModelTier } from '@grasp/schema';
 import { env } from '../../env';
 import { ProviderRequestError } from '../../errors';
-import type { ChatRequest, ChatResponse, ProviderAdapter } from '../types';
+import type { ChatMessage, ChatRequest, ChatResponse, ProviderAdapter } from '../types';
 import { asNumber, asString, pick, postJson } from './http';
 
 /**
@@ -50,8 +50,18 @@ function toGeminiSchema(schema: Record<string, unknown>): Record<string, unknown
   return walk(schema) as Record<string, unknown>;
 }
 
+/** A message as Gemini parts: its text, then any files inline. */
+export function geminiParts(m: ChatMessage): Record<string, unknown>[] {
+  return [
+    { text: m.content },
+    ...(m.files ?? []).map((f) => ({ inlineData: { mimeType: f.mime, data: f.base64 } })),
+  ];
+}
+
 export const geminiAdapter: ProviderAdapter = {
   name: 'gemini',
+  // Every Gemini model in the chain is multimodal.
+  reads: ['image', 'pdf'],
 
   available() {
     return Boolean(env.gemini.apiKey);
@@ -74,7 +84,7 @@ export const geminiAdapter: ProviderAdapter = {
     const body: Record<string, unknown> = {
       contents: req.messages.map((m) => ({
         role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }],
+        parts: geminiParts(m),
       })),
       generationConfig: {
         maxOutputTokens: req.maxOutputTokens,

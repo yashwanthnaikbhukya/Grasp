@@ -165,6 +165,15 @@ describe('UserScope', () => {
     }
   });
 
+  it('gives no way to edit the event log (rule 4)', () => {
+    const events = new UserScope(ALICE).events() as unknown as Record<string, unknown>;
+    expect(typeof events.find).toBe('function');
+    expect(typeof events.countDocuments).toBe('function');
+    for (const write of ['insertOne', 'updateOne', 'deleteOne', 'deleteMany', 'unsafeUnscoped']) {
+      expect(events[write], write).toBeUndefined();
+    }
+  });
+
   it('keeps the escape hatch findable', () => {
     // Named to be greppable in review. If this is ever renamed to something
     // innocuous, that is the review signal being removed.

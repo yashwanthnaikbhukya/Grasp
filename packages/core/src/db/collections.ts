@@ -1,3 +1,4 @@
+import type { StoredEvent } from '@grasp/schema';
 import type { Collection, Document, ObjectId } from 'mongodb';
 import { db } from './client';
 
@@ -40,15 +41,12 @@ function col<T extends Document>(name: CollectionName): Collection<T> {
   return db().collection<T>(name);
 }
 
-export interface DocEvent extends Document {
-  _id?: ObjectId;
-  seq: number;
-  type: string;
-  userId: ObjectId | string;
-  payload: unknown;
-  idempotencyKey: string;
-  ts: Date;
-}
+/**
+ * An event as stored. The shape is `StoredEvent` from @grasp/schema (rule 3);
+ * `userId` is a string — an ObjectId there made every event invisible to its
+ * owner's scoped reads (see events/emit.ts).
+ */
+export type DocEvent = StoredEvent & Document & { _id?: ObjectId };
 
 export interface DocLlmCall extends Document {
   _id?: ObjectId;

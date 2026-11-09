@@ -1,12 +1,20 @@
 /**
  * `pnpm db:indexes`
  *
- * Creates every regular index (idempotent — safe to re-run), then prints the two
- * Atlas Search definitions to paste into the Atlas UI. Those are separate
- * resources the driver cannot create; see docs/08-setup.md § 5.
+ * Creates every regular index, backfills derived chunk flags, then creates or
+ * updates the two Atlas Search indexes through the driver (MongoDB 7.0+, M0
+ * included). Idempotent — safe to re-run. If the driver path is refused, or with
+ * `--print`, it prints the JSON for the Atlas UI instead (docs/08-setup.md § 5).
  */
 import { isPlaceholder } from './load-env';
-import { closeMongo, ensureIndexes, env, searchIndexDefinitions } from '@grasp/core';
+import {
+  backfillChunkFlags,
+  closeMongo,
+  ensureIndexes,
+  ensureSearchIndexes,
+  env,
+  searchIndexDefinitions,
+} from '@grasp/core';
 
 const DIM = '\x1b[2m';
 const BOLD = '\x1b[1m';
@@ -25,7 +33,7 @@ if (!env.mongo.uri || isPlaceholder(env.mongo.uri)) {
 
 console.log(`\n${BOLD}Creating regular indexes${OFF} ${DIM}on ${env.mongo.db}${OFF}\n`);
 
-let results;
+let results: Awaited<ReturnType<typeof ensureIndexes>>;
 try {
   results = await ensureIndexes();
 } catch (e) {
@@ -48,12 +56,39 @@ for (const r of results) {
 
 console.log(`\n${DIM}${created} index definitions applied across ${results.length} collections.${OFF}`);
 
+// ---- Derived chunk flags -----------------------------------------------------
+
+const backfilled = await backfillChunkFlags();
+if (backfilled > 0) console.log(`${DIM}Backfilled curriculumNeutral on ${backfilled} chunk(s).${OFF}`);
+
 // ---- Atlas Search / Vector Search -----------------------------------------
 
-console.log(`\n${BOLD}Atlas Search indexes — create these once, in the Atlas UI${OFF}`);
+if (!process.argv.includes('--print')) {
+  try {
+    const synced = await ensureSearchIndexes();
+    console.log(`\n${BOLD}Atlas Search indexes${OFF}\n`);
+    for (const r of synced) {
+      const mark = r.action === 'unchanged' ? GREEN + '✓' : YELLOW + '↻';
+      console.log(
+        `  ${mark}${OFF} ${r.name.padEnd(20)} ${DIM}${r.action} · ${r.status}${r.action !== 'unchanged' ? ' — builds in a few minutes; the old index serves until then' : ''}${OFF}`,
+      );
+    }
+    console.log('');
+    await closeMongo();
+    process.exit(0);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.log(`\n${YELLOW}Could not manage search indexes via the driver:${OFF} ${msg.split('\n')[0]}`);
+    console.log(`${DIM}Falling back to printing the definitions for the Atlas UI.${OFF}`);
+  }
+}
+
+console.log(`\n${BOLD}Atlas Search indexes — create these once${OFF}`);
 console.log(
   `${DIM}Atlas → your cluster → Atlas Search → Create Search Index → JSON Editor.
-The driver cannot create these; they are separate resources.${OFF}\n`,
+Pick the matching Search Type for each — a vector definition pasted under
+"Atlas Search" fails with "define mappings". Or create both with the driver's
+createSearchIndexes (MongoDB 7.0+, M0 included). See docs/08-setup.md § 5.${OFF}\n`,
 );
 
 for (const idx of searchIndexDefinitions()) {

@@ -14,6 +14,8 @@ Read in order the first time. After that, jump by task.
 | 08 | [Setup](08-setup.md) | Accounts, keys, connection strings — step by step |
 | 09 | [Conventions](09-conventions.md) | Code style, testing, evals, commits |
 | 10 | [Onboarding](10-onboarding.md) | The journey, the global stage ladder, consent and moderation |
+| 11 | [Experience](11-experience.md) | UX principles, navigation, per-surface requirements, a11y and performance budgets |
+| 12 | [Using Grasp](12-using-grasp.md) | Start it, use it as a learner, what works today, troubleshooting |
 
 ## Decision records
 

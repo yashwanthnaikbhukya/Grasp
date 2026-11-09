@@ -36,8 +36,9 @@ events that supersede, not edits.
 | Field | Type | Notes |
 | --- | --- | --- |
 | `_id` | ObjectId | |
+| `authId` | string | unique. Links to Better Auth's own credential collections, which Grasp never writes — an auth-library upgrade can never migrate learner data |
 | `email` | string | unique |
-| `name` | string | |
+| `name` | string | display only — never enters a prompt |
 | `profile` | LearnerProfile | **everything onboarding discovers** — region, locale, age, stage, curriculumIds, subjects, goal, language, depth, consent. Replaced the old process-level board/grade/subject scope ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)). Every field optional with a default. |
 | `streak` | `{ current, longest, lastActiveDate }` | |
 | `xp` | number | |
@@ -45,8 +46,9 @@ events that supersede, not edits.
 
 ### Content plane
 
-**`concepts`** — the **universal** graph. Authored, not generated. ~150–300 rows
-per subject. No board, no grade ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)).
+**`concepts`** — the **universal** graph. Model-proposed and resolver-deduped,
+never hand-authored ([ADR 0007](adr/0007-llm-authored-concept-graph.md)). ~150–300
+rows per subject. No board, no grade ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)).
 
 | Field | Type | Notes |
 | --- | --- | --- |
@@ -54,21 +56,28 @@ per subject. No board, no grade ([ADR 0006](adr/0006-curriculum-agnostic-concept
 | `name` | string | canonical international-English name |
 | `aliases` | string[] | every local + colloquial variant (`cosec`, `SOH CAH TOA`). **Does real work** — feeds retrieval recall and cross-curriculum tagging. |
 | `subject` / `domain` | string | universal, not a curriculum's chapter name |
-| `prereqIds` | string[] | **edges of the DAG.** The expensive artifact; authored once, reused by every curriculum |
+| `prereqIds` | string[] | **edges of the DAG.** The expensive artifact; generated once, cycle-checked, reused by every curriculum |
 | `description` | string | one paragraph, used as tagging context |
 | `objectives` | string[] | learning objectives; card generation targets these |
 | `stageRange` | `{min,max}`? | **advisory** typical band. Ranks and caveats, never refuses |
 | `depth` | number | topological depth, computed by the loader |
+| `embedding` | number[] | 768-dim. **Required on every write path** — a row without one is invisible to dedupe |
+| `origin` / `proposedFrom` / `generatedBy` | | provenance: `llm` or `seed`, the passage, the model call |
+| `needsReview` / `reviewNote` | bool / string | set when the resolver landed in the review band |
 
-**`curricula`** — one row per real-world syllabus. Data, not code: adding one is
-adding a row to `data/curricula.seed.json`.
+**`curricula`** — one row per programme a learner studies or prepares for: a
+board or school curriculum, an entrance exam, university coursework, a
+professional qualification, a competition ([ADR 0008](adr/0008-programmes-subjects-tertiary-stages.md)).
+Data, not code: adding one is adding a row to `data/curricula.seed.json`.
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `_id` | string | slug, e.g. `gb-gcse-maths` |
+| `_id` | string | stable slug, e.g. `gb-gcse-maths` (now *GCSE*, every subject — ids predate multi-subject programmes and are kept) |
+| `kind` | enum | `school` \| `exam` \| `university` \| `professional` \| `competition` \| `self-study` — onboarding's sections |
+| `subjects` | SubjectId[] | what it offers, from `packages/schema/src/subjects.ts`; suggested at onboarding, never a limit |
 | `name` / `authority` | string | as a learner would recognise it |
 | `regions` | string[] | ISO-3166 codes, or `['*']` for international (IB, Cambridge) |
-| `subject` / `stageRange` / `language` | | onboarding candidate filter |
+| `stageRange` / `language` | | onboarding candidate filter; stage runs 1–18 (13–16 degree years, 17 master's, 18 doctorate) |
 | `notation` | NotationProfile | `csc` vs `cosec`, `trapezoid` vs `trapezium`, decimal separator, lakh/crore grouping, units. **Not cosmetic** — `trapezoid` denotes different shapes in US and UK English |
 | `exam` | `{name, typicalMonth}`? | drives review urgency |
 | `active` | bool | false hides it from onboarding but keeps existing learners working |
@@ -86,6 +95,9 @@ adding a row to `data/curricula.seed.json`.
 
 > **A missing mapping row means "unmapped", not "out of scope."** An unmapped
 > concept degrades to the universal default so the learner sees more, not less.
+
+> **Today:** `pnpm db:seed:curricula` writes mappings, but nothing reads them
+> yet — `inScope` gating, `localName` and `sequenceIndex` ordering are planned.
 
 > The whole graph is a few hundred nodes — load it into memory and cache it.
 > Do not write recursive `$graphLookup` queries for traversal at this size.
@@ -132,8 +144,9 @@ adding a row to `data/curricula.seed.json`.
 | `sourceId` | ObjectId? | provenance if derived from a chunk |
 | `generatedBy` | `{ task, promptVersion, model }`? | reproducibility |
 
-> **Only `verified` questions may be served.** Enforced in the card query, not
-> by convention.
+> **Only `verified` questions may be served.** Enforced in the feed query, not
+> by convention — and `/api/attempt` rejects an attempt on anything else. The
+> feed currently serves `type: 'mcq'` only.
 
 ### Learner plane
 
@@ -149,7 +162,11 @@ adding a row to `data/curricula.seed.json`.
 | `lastSeenAt` | Date | |
 | `nextDueAt` | Date | **the due-queue key.** Indexed with userId |
 | `state` | enum | `unseen` \| `learning` \| `review` \| `mastered` |
-| `updatedFromEventSeq` | number | replay watermark; makes rebuild resumable |
+| `updatedFromEventSeq` | number | replay watermark; makes rebuild resumable. **Not yet written by the live fold** in `/api/attempt` — planned with `learner:rebuild` |
+
+> **Planned — not built yet:** nothing writes `episodes` or `misconceptions`
+> today. The learner card already reads both, so they render empty until the
+> derivations exist (see [07-phases.md](07-phases.md)).
 
 **`episodes`** — semantic memory of what happened. Feeds the learner card.
 
@@ -170,7 +187,7 @@ adding a row to `data/curricula.seed.json`.
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `userId`, `title` (auto after turn 2), `createdAt`, `archivedAt?` | | |
+| `userId`, `title`, `createdAt`, `archivedAt?` | | `title` is the first message truncated to 48 chars today (`session.title` model call planned) |
 | `digest` | `{ text, throughMessageId, tokenCount }`? | rolling summary — the compaction artifact |
 | `tokenStats` | `{ in, out, cachedIn }` | per-session cost visibility |
 | `activeLeafId` | ObjectId? | which branch of the tree is rendered |
@@ -180,9 +197,15 @@ adding a row to `data/curricula.seed.json`.
 | Field | Type | Notes |
 | --- | --- | --- |
 | `sessionId`, `role`, `createdAt` | | |
+| `userId` | string | **denormalized on purpose** — scoping is a direct filter, never a join through `chatSessions` |
 | `parentMessageId` | ObjectId? | **the tree.** null ⇒ root |
 | `parts` | `Part[]` | discriminated: `text` \| `attachmentRef` \| `citation` \| `toolCall` |
 | `citations` | `{ chunkId, quoted }[]` | verified post-generation |
+| `flags` | enum[] | `fabricated-citation` \| `ungrounded` \| `budget-shed` — the hallucination metric; `keyword-only`, `interrupted`, `no-material` (nothing relevant retrieved — a general-knowledge answer) |
+| `sources` | `{ citeId, chunkId, heading, excerpt }[]`? | assistant: every passage the answer was given, under its `[cN]` marker — so a reopened chat shows "N sources" (saved from 2026-11-09) |
+| `understoodAs` | string? | assistant: the question as `query.understand` rewrote it |
+| `feedback` | `{ rating: up\|down, at }`? | the learner's thumbs on an answer — eval data |
+| `supersededAt` | Date? | replaced by Regenerate or Edit; kept, never shown or resent as history |
 | `model` / `promptVersion` / `traceId` | string? | reproducibility |
 | `usage` | `{ in, out, cachedIn }`? | |
 
@@ -190,10 +213,14 @@ adding a row to `data/curricula.seed.json`.
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `userId`, `sessionId?`, `r2Key`, `mime`, `bytes`, `filename` | | |
+| `userId`, `sessionId?`, `mime`, `bytes`, `filename` | | `mime` is sniffed from the bytes |
+| `messageId` | ObjectId? | the user message it was sent with; null while in the composer (only then deletable) |
+| `kind` | enum | `image` \| `pdf` \| `text` |
+| `storage`, `r2Key?`, `data` | | `inline` today: `data` (BSON Binary) on the document, never in an API response; `r2` later |
+| `expiresAt` | Date | TTL index — session attachments go after 30 days |
 | `scope` | enum | `session` \| `library` — library persists into the learner's corpus |
 | `status` | enum | `uploading` \| `extracting` \| `ready` \| `failed` |
-| `extract` | `{ pageCount?, chunkCount, warnings[] }`? | |
+| `extract` | `{ text, pageCount?, chunkCount, warnings[], promptVersion? }`? | the transcript the tutor and retrieval see |
 
 **`attempts`** — one per answered card. The evidence stream.
 
@@ -242,18 +269,23 @@ adding a row to `data/curricula.seed.json`.
 | --- | --- | --- |
 | `_id` | ObjectId | |
 | `seq` | number | monotonic; the replay cursor |
-| `type` | string | `attempt.recorded`, `doubt.asked`, `card.swiped`, … |
-| `userId` | ObjectId | |
+| `type` | string | `attempt.recorded`, `doubt.asked`, `card.skipped`, … |
+| `userId` | string | **a string, not an ObjectId** — matches every `UserScope` filter. An ObjectId here made events invisible to their owner |
 | `payload` | unknown | validated per type by a Zod discriminated union |
 | `idempotencyKey` | string | **unique index.** Retries are free |
 | `ts` | Date | |
 
-**`promptVersions`** — mirrors `packages/prompts` at runtime so traces resolve
-historically even after a template changes.
+**`counters`** — `{ _id: 'events.seq', value }`. Allocates `events.seq` with an
+atomic `$inc`.
+
+**`promptVersions`** — *planned, not built yet:* will mirror `packages/prompts` at
+runtime so traces resolve historically even after a template changes. The
+collection and its index exist; nothing writes to it.
 
 **`llmCalls`** — thin local record of every gateway call (task, tier, provider,
-model, tokens, ms, ok, promptVersion, traceId). Langfuse is the rich view; this
-is the one that survives without a third party and powers the cost guard.
+model, tokens, ms, ok, errorKind/errorMessage, failoverDepth, promptVersion,
+traceId). Langfuse is the rich view; this is the one that survives without a
+third party, feeds `pnpm traces`, and will power the cost guard (planned).
 
 ## Indexes
 
@@ -263,9 +295,10 @@ Defined in `packages/core/src/db/indexes.ts`; created by `pnpm db:indexes`
 | Collection | Index | Why |
 | --- | --- | --- |
 | `users` | `{ email: 1 }` unique | login |
+| `users` | `{ authId: 1 }` unique | Better Auth → learner record |
 | `concepts` | `{ subject:1, domain:1 }` | subject load |
 | `concepts` | `{ aliases:1 }` | cross-curriculum tagging + retrieval recall |
-| `curricula` | `{ regions:1, subject:1, active:1 }` | onboarding candidates |
+| `curricula` | `{ regions:1, active:1 }` | onboarding candidates |
 | `curriculumMappings` | `{ curriculumId:1, conceptId:1 }` unique | the join |
 | `curriculumMappings` | `{ curriculumId:1, sequenceIndex:1 }` | coursework teaching order |
 | `docChunks` | `{ ownerScope:1, ownerId:1 }` | scoped retrieval filter |
@@ -275,24 +308,27 @@ Defined in `packages/core/src/db/indexes.ts`; created by `pnpm db:indexes`
 | `docChunks` | **Atlas Search** `grasp_chunks_text` | BM25 leg of hybrid |
 | `docChunks` | **Atlas Vector Search** `grasp_chunks_vec` | vector leg |
 | `questions` | `{ conceptIds:1, verificationStatus:1, difficulty:1 }` | card selection |
-| `attempts` | `{ userId:1, conceptId:1, ts:-1 }` | mastery + slips queries |
+| `attempts` | `{ userId:1, conceptIds:1, ts:-1 }` | mastery + slips queries (multikey) |
 | `attempts` | `{ questionId:1 }` | item difficulty refinement |
 | `mastery` | `{ userId:1, conceptId:1 }` unique | upsert target |
 | `mastery` | `{ userId:1, nextDueAt:1 }` | **the due queue, hit on every feed load** |
 | `messages` | `{ sessionId:1, createdAt:1 }` | render a session |
 | `messages` | `{ parentMessageId:1 }` | walk the tree |
-| `messages` | **Atlas Search** `grasp_messages_text` | cross-session search |
+| `messages` | `{ userId:1, createdAt:-1 }` | scoped reads |
+| `messages` | **Atlas Search** `grasp_messages_text` | cross-session search (planned — not created yet) |
 | `events` | `{ idempotencyKey:1 }` unique | safe retries |
-| `events` | `{ seq:1 }` | replay |
+| `events` | `{ seq:1 }` unique | replay |
 | `events` | `{ userId:1, ts:-1 }` | timeline |
 | `duels` | `{ code:1 }` unique | join by code |
 | `slips` | `{ userId:1, rootCause:1, createdAt:-1 }` | Error-DNA digest |
 
-### The two Atlas indexes need creating in the UI or via Atlas CLI
+### The two Atlas Search indexes are created separately
 
-Driver-created indexes cover the regular ones. Atlas Search and Vector Search
-definitions are separate resources — `pnpm db:indexes` prints the exact JSON to
-paste. Steps in [08-setup.md](08-setup.md#5-create-the-two-atlas-search-indexes).
+`pnpm db:indexes` covers the regular ones. Atlas Search and Vector Search
+definitions are separate resources — `createIndexes` cannot make them. The same
+command prints the exact JSON; create them in the Atlas UI or with the driver's
+`createSearchIndexes` (MongoDB 7.0+, M0 included). Steps in
+[08-setup.md](08-setup.md#5-create-the-two-atlas-search-indexes).
 
 ## Storage discipline (M0 is 512 MB)
 

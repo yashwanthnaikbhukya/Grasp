@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-label="Grasp">
+  <title>Grasp</title>
+  <!-- Grasp app icon: the G mark, white on a cobalt tile, the idea node in warm ochre.
+       Same artwork as <GraspMark variant="tile"> in components/brand/logo.tsx. -->
+  <defs>
+    <linearGradient id="t" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4a74f0"/>
+      <stop offset="1" stop-color="#1a3fb8"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="12" fill="url(#t)"/>
+  <g transform="translate(24 24) scale(0.82) translate(-24 -24)">
+    <path d="M33 13.28 A14 14 0 1 0 38 24 H28.4" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="33" cy="13.28" r="3.4" fill="#fff"/>
+    <circle cx="25.2" cy="24" r="4.4" fill="#f4b860"/>
+  </g>
+</svg>

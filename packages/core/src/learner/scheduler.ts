@@ -46,6 +46,14 @@ export interface FeedConfig {
   frontierThreshold: number;
 }
 
+/**
+ * A card answered within this window is not served again. The same item minutes
+ * later is not practice — its worked solution is still in their head, so a
+ * "correct" there is free mastery. The *concept* returns on its review schedule;
+ * the identical item waits.
+ */
+export const RESERVE_AFTER_MS = 12 * 3_600_000;
+
 export const DEFAULT_FEED: FeedConfig = {
   count: 20,
   shares: { due: 0.4, weak: 0.3, frontier: 0.2, interleave: 0.1 },

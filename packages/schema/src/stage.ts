@@ -8,6 +8,11 @@ import { z } from 'zod';
  *
  *   stage 10  →  Class 10 (IN) · Grade 10 (US) · Year 11 (GB) · MYP 5 (IB)
  *
+ * Past school the count keeps going (ADR 0008): 13–16 are the years of a first
+ * degree or diploma, 17 a master's, 18 a doctorate. Advisory like every stage —
+ * a 3-year degree, a gap year or a career change all land "wrong" by a year,
+ * and that is fine.
+ *
  * The rule that prevents the whole category of bug this replaced:
  * **never store a local label in a field, and never name a field `grade`.**
  * `stage` is the number; `stageLabel(stage, region)` is the string.
@@ -15,11 +20,13 @@ import { z } from 'zod';
  * See docs/adr/0006-curriculum-agnostic-concepts.md.
  */
 
-export const Stage = z.number().int().min(0).max(14);
+export const Stage = z.number().int().min(0).max(18);
 export type Stage = z.infer<typeof Stage>;
 
 export const STAGE_MIN = 0;
-export const STAGE_MAX = 14;
+export const STAGE_MAX = 18;
+/** The last school stage; above it is college and university. */
+export const LAST_SCHOOL_STAGE = 12;
 
 /** ISO 3166-1 alpha-2, or 'XX' when the learner declines to say. */
 export const Region = z.string().length(2).toUpperCase();
@@ -31,7 +38,8 @@ export type Region = z.infer<typeof Region>;
  */
 export function typicalAgeForStage(stage: Stage): { min: number; max: number } {
   if (stage <= 0) return { min: 4, max: 6 };
-  if (stage >= 13) return { min: 18, max: 99 };
+  if (stage >= 18) return { min: 24, max: 99 };
+  if (stage === 17) return { min: 22, max: 99 };
   return { min: stage + 5, max: stage + 6 };
 }
 
@@ -50,6 +58,21 @@ type Labeller = (stage: Stage) => string;
 
 /** UK-style: Year N begins a year earlier than US Grade N. Year 11 ≈ Grade 10. */
 const ukYear: Labeller = (s) => `Year ${s + 1}`;
+
+/**
+ * College and university, by region. US/Canada name the years; South Asia says
+ * "college" for the undergraduate years; most of the world says "university".
+ */
+const usCollege = ['College freshman', 'College sophomore', 'College junior', 'College senior'];
+function tertiaryLabel(stage: Stage, region?: string): string {
+  if (stage >= 18) return 'Doctorate (PhD)';
+  if (stage === 17) return "Master's";
+  const year = stage - 12;
+  const r = region?.toUpperCase() ?? '';
+  if (r === 'US' || r === 'CA') return usCollege[year - 1] ?? `College year ${year}`;
+  if (['IN', 'PK', 'BD', 'NP', 'LK'].includes(r)) return `College year ${year} (UG)`;
+  return `University year ${year}`;
+}
 
 /** AU/NZ-style: Year N aligns with US Grade N. */
 const plainYear: Labeller = (s) => `Year ${s}`;
@@ -90,8 +113,15 @@ const LABELLERS: Record<string, Labeller> = {
   EG: grade,
   AE: grade,
   SA: grade,
+  QA: grade,
+  KW: grade,
+  OM: grade,
   TR: grade,
   CN: grade,
+  TW: grade,
+  SL: grade,
+  GM: grade,
+  LR: grade,
 
   // UK-style — "Year N+1"
   GB: ukYear,
@@ -122,6 +152,12 @@ const LABELLERS: Record<string, Labeller> = {
   CO: (s) => `Grado ${s}`,
   AR: (s) => `${s}º año`,
 
+  // Spain — Primaria, then ESO (4 years), then Bachillerato (2)
+  ES: (s) => (s <= 6 ? `${s}º Primaria` : s <= 10 ? `${s - 6}º ESO` : `${s - 10}º Bachillerato`),
+
+  // Korea — elementary / middle / high, each renumbered
+  KR: (s) => (s <= 6 ? `초등학교 ${s}학년` : s <= 9 ? `중학교 ${s - 6}학년` : `고등학교 ${s - 9}학년`),
+
   // Vietnam
   VN: (s) => `Lớp ${s}`,
 
@@ -148,22 +184,26 @@ const LABELLERS: Record<string, Labeller> = {
 
 export function stageLabel(stage: Stage, region?: string): string {
   if (stage <= 0) return 'Pre-primary';
-  if (stage === 13) return 'Undergraduate';
-  if (stage >= 14) return 'Postgraduate';
+  if (stage > LAST_SCHOOL_STAGE) return tertiaryLabel(stage, region);
 
   const labeller = region ? LABELLERS[region.toUpperCase()] : undefined;
   return (labeller ?? grade)(stage);
 }
 
+export type StageBand = 'school' | 'university';
+
 /** Every option the stage picker should show for a region, in ladder order. */
-export function stageOptions(region?: string): { stage: Stage; label: string; age: string }[] {
-  const out: { stage: Stage; label: string; age: string }[] = [];
-  for (let s = 1; s <= 13; s++) {
+export function stageOptions(
+  region?: string,
+): { stage: Stage; label: string; age: string; band: StageBand }[] {
+  const out: { stage: Stage; label: string; age: string; band: StageBand }[] = [];
+  for (let s = 1; s <= STAGE_MAX; s++) {
     const { min, max } = typicalAgeForStage(s);
     out.push({
       stage: s,
       label: stageLabel(s, region),
-      age: s >= 13 ? '18+' : `${min}–${max}`,
+      age: max >= 99 ? `${min}+` : `${min}–${max}`,
+      band: s > LAST_SCHOOL_STAGE ? 'university' : 'school',
     });
   }
   return out;

@@ -35,6 +35,9 @@ pnpm dev
 real free tier. [docs/08-setup.md](docs/08-setup.md) walks through each in
 order, and tells you which are needed *now* versus later.
 
+Then open **http://localhost:3000** → **Get started**. How to use each part, what
+works today and what doesn't: [docs/12-using-grasp.md](docs/12-using-grasp.md).
+
 ## Documentation
 
 Start at [docs/README.md](docs/README.md). The two you'll read most:
@@ -44,16 +47,18 @@ Start at [docs/README.md](docs/README.md). The two you'll read most:
 
 ## Stack
 
-TypeScript end to end. Next.js on Vercel, MongoDB Atlas (documents + full-text +
-vectors in one place), Upstash Redis, Cloudflare R2, Inngest for durable jobs.
-Models via a provider-agnostic gateway with failover across Gemini, Groq, and
-OpenRouter free tiers; embeddings and reranking run locally through Ollama. A
-Python service joins in Phase 3 for document parsing, symbolic math, and
+TypeScript end to end. Next.js, MongoDB Atlas (documents + full-text + vectors
+in one place). Models via a provider-agnostic gateway with failover across
+Gemini, Groq, and OpenRouter free tiers; embeddings run locally through Ollama.
+Planned, not wired yet: Vercel deploy, Upstash Redis, Cloudflare R2, and
+Inngest for durable jobs ([docs/07-phases.md](docs/07-phases.md)). A Python
+service joins in Phase 3 for document parsing, symbolic math, and
 psychometrics.
 
 ## Scope
 
-**Deliberately narrow.** One subject, one grade, 150–300 concept nodes. Narrow
-scope is not a limitation of the prototype — it is the mechanism that makes
-retrieval good enough to be useful. See
-[docs/01-product.md](docs/01-product.md#scope).
+**Global product, narrow first corpus.** Scope lives on each learner's profile;
+only the first *ingested* corpus is one subject and stage band
+(`GRASP_SEED_CURRICULUM`). See
+[ADR 0006](docs/adr/0006-curriculum-agnostic-concepts.md) and
+[docs/01-product.md](docs/01-product.md#audience-and-scope).

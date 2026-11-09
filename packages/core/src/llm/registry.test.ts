@@ -15,7 +15,6 @@ const PROMPT_PENDING: Record<string, string> = {
   'session.title@1': 'Phase 1 — session auto-titling',
   'doubt.decompose@1': 'Phase 3 — Snap',
   'mindmap.build@1': 'Phase 4 — Map',
-  'eval.judge@1': 'Phase 0.4 — eval harness',
 };
 
 describe('task registry', () => {
@@ -76,6 +75,9 @@ describe('task registry', () => {
     // The learner card makes these per-learner by design; a cache hit would
     // serve one student another student's context.
     expect(TASKS['tutor.reply'].cache).toBe(false);
+    expect(TASKS['tutor.answer'].cache).toBe(false);
+    expect(TASKS['tutor.teach'].cache).toBe(false);
+    expect(TASKS['tutor.coach'].cache).toBe(false);
     expect(TASKS['query.understand'].cache).toBe(false);
     expect(TASKS['slip.classify'].cache).toBe(false);
   });

@@ -9,8 +9,10 @@
   "scripts": {
     "dev": "pnpm --filter @grasp/web dev",
     "build": "turbo run build",
-    "check": "turbo run typecheck lint",
+    "check": "turbo run typecheck && pnpm lint && pnpm lint:boundaries",
     "typecheck": "turbo run typecheck",
+    "lint": "biome lint .",
+    "lint:boundaries": "tsx scripts/lint-boundaries.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "setup:check": "tsx scripts/setup-check.ts",
@@ -20,7 +22,9 @@
     "concepts:grow": "tsx scripts/concepts-grow.ts",
     "ingest": "tsx scripts/ingest.ts",
     "retrieval:eval": "tsx scripts/retrieval-eval.ts",
+    "retrieval:isolation": "tsx scripts/retrieval-isolation.ts",
     "cards:build": "tsx scripts/cards-build.ts",
+    "learner:rebuild": "tsx scripts/learner-rebuild.ts",
     "concepts:reset": "tsx scripts/concepts-reset.ts",
     "concepts:calibrate": "tsx scripts/concepts-calibrate.ts",
     "db:indexes": "tsx scripts/db-indexes.ts",
@@ -30,6 +34,7 @@
     "eval": "tsx scripts/eval.ts"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.6.6",
     "@grasp/core": "workspace:*",
     "@grasp/prompts": "workspace:*",
     "@grasp/schema": "workspace:*",

@@ -1,8 +1,27 @@
 import type { ModelTier, ProviderName } from '@grasp/schema';
 
+/** What a provider can take besides text. */
+export type FileKind = 'image' | 'pdf';
+
+/**
+ * A file sent to the model inline with a message — an image or PDF the learner
+ * attached. Base64, because every provider's JSON API wants it that way.
+ */
+export interface InlineFile {
+  mime: string;
+  base64: string;
+  name?: string;
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  /**
+   * Sent only to providers that declare they can read them (`reads`). The
+   * gateway strips them for the rest — which is why an attachment's transcript
+   * always travels in `content` too.
+   */
+  files?: InlineFile[];
 }
 
 export interface ChatRequest {
@@ -38,6 +57,8 @@ export interface ProviderAdapter {
   available(tier: ModelTier): boolean;
   /** Concrete model this adapter will use for a tier — for tracing. */
   modelFor(tier: ModelTier): string;
+  /** File kinds this provider's models accept inline. Absent ⇒ text only. */
+  readonly reads?: readonly FileKind[];
   chat(req: ChatRequest): Promise<ChatResponse>;
 }
 

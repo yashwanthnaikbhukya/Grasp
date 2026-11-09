@@ -1,6 +1,7 @@
 # 05 — Context broker
 
-`packages/core/src/context` — **Phase 1.** This file is the spec it will be built to.
+`packages/core/src/context` — **Phase 1, v1 built.** This file is the spec; where
+today's code falls short of it, the gap is marked inline.
 
 The broker is the only component that knows how to turn a query, a corpus, and a
 learner into a prompt. It is the highest-value piece of engineering in Grasp,
@@ -8,7 +9,7 @@ because it is where "using AI correctly" actually lives.
 
 ```ts
 const bundle = await assemble({
-  userId, surface: 'ask', sessionId, query, attachmentIds: [],
+  userId, sessionId, query, profile, history, signal,
 });
 // → ContextBundle: ordered, budgeted, every span carries a citable id
 ```
@@ -28,8 +29,21 @@ One cheap `fast` call (`query.understand`) doing three jobs at once:
 This is the step most RAG systems skip, and skipping it is why they work on the
 first turn and break on the second. It costs one small call and roughly 200 ms.
 
+**A question is never chitchat** (`context/intent.ts`). Chitchat skips retrieval
+and gets a 1,000-token reply, and the model intermittently labelled off-list
+questions ("what is photosynthesis") that way. A deterministic guard lifts any
+question-shaped message back to `explain`, leaving greetings alone. Golden cases
+qu-14..17 hold the model to it.
+
 `intent: 'chitchat'` short-circuits: no retrieval, no learner card, minimal
 budget. Not every message needs the machinery.
+
+*Today:* the model is shown the learner's subjects' concepts (up to 400) as a
+catalogue, and the `conceptIds` it returns pass through `knownConceptIds()` —
+exact id, then alias or name, then slug; anything unmatched is dropped — before
+they reach retrieval, the tutor or the append-only `doubt.asked` event (rule 13).
+On the Ask path the call has a 1.5 s deadline; past it, or on failure, the raw
+query is used (the tutor still receives the whole conversation).
 
 ### 2 — Allocate the budget explicitly
 
@@ -53,7 +67,7 @@ first and **records what it shed on the bundle**, so a degraded answer is
 diagnosable rather than mysterious.
 
 `solve` shifts budget from history into attachments. `quiz` drops the learner
-card to a single mastery line. Profiles live in `context/budgets.ts`.
+card to a single mastery line. Profiles live in `context/budget.ts`.
 
 ### 3 — Compact history, never resend it
 
@@ -65,6 +79,10 @@ card to a single mastery line. Profiles live in `context/budgets.ts`.
 This is the difference between a chat that stays coherent at turn forty and one
 that either forgets everything or costs a fortune. It also keeps the cacheable
 prefix stable, because the digest changes rarely.
+
+*Today: verbatim tail only.* The digest is planned — `session.digest` has no
+prompt yet. `/api/chat` passes the latest 40 messages; the broker keeps the last
+6 turns of those.
 
 ### 4 — Retrieve hybrid, then rerank
 
@@ -83,14 +101,26 @@ students ask most: formula names, theorem names, specific numbers, section
 references. BM25-only fails on paraphrase. Reciprocal rank fusion needs no score
 normalization, which is why it's the right fusion for a POC.
 
+*Today the rerank is not a cross-encoder:* it is `0.8 × normalised RRF score +
+0.2 × lexical overlap with the query` (`retrieval/fuse.ts`). The local
+cross-encoder is planned ([07-phases.md](07-phases.md) §1.2).
+
 Scope filter, always applied:
 
 ```
 ownerScope: 'global'  AND (curriculumIds ∩ profile.curriculumIds  OR  curriculumIds = [])
-                      AND subject ∈ profile.subjects
+                      AND (subject ∈ profile.subjects  OR  subject = '')
   OR ownerScope: 'user'     AND ownerId = userId
   OR ownerScope: 'session'  AND ownerId = sessionId
 ```
+
+*It runs inside both searches* — `$vectorSearch.filter` (MQL) and `$search`
+`compound.filter` (`searchScopeFilter`, the same scope in Atlas Search
+operators) — and again as a `$match` afterwards, so the security boundary holds
+twice. Curriculum-neutral content is matched on the indexed `curriculumNeutral`
+flag, because `$size` cannot run inside `$vectorSearch`. Verified by
+`pnpm retrieval:isolation`: with 1,008 foreign-user copies of the corpus present,
+every learner result is unchanged and none leak.
 
 Three things about that filter:
 
@@ -99,7 +129,8 @@ Three things about that filter:
 - `curriculumIds = []` means curriculum-neutral content, which stays eligible for
   everyone. Most good explanations are.
 - The `user`/`session` legs are a **security** boundary, not a relevance one, and
-  they have a dedicated integration test.
+  need a dedicated integration test — *planned, not written yet*
+  ([07-phases.md](07-phases.md) §1.2).
 
 `stageRange` deliberately does **not** appear here. It ranks and it caveats; it
 never excludes. A learner reaching past their syllabus is the best signal they
@@ -107,16 +138,41 @@ can send, and a filter that silently swallows the answer is the worst possible
 response to it.
 
 Concept-targeted boost: chunks tagged with a `conceptId` from step 1 get a rank
-bonus before fusion.
+bonus, applied to the fused list before the rerank.
 
 Each retrieved chunk is prepended with its `headingPath` at assembly time —
 *"Ch 8 › 8.2 Identities › …"* — which measurably improves grounding for a few
 tokens.
 
+**Then a relevance gate** (`context/relevance.ts`). Retrieval always returns its
+top k: rank fusion says which passages are *least far*, never whether any is
+*near*. With one maths chapter in the corpus, "what is photosynthesis" received
+six trigonometry passages; the tutor cited one for a biology fact and told the
+student "we are looking at your mathematics syllabus" (2026-11-09). Each chunk
+now carries its cosine `similarity` to the query, and the gate keys on the
+question first, because on this corpus that separates cleanly where per-passage
+similarity does not:
+
+| The question was… | Passages kept | Measured |
+| --- | --- | --- |
+| understood, tagged with ≥1 graph concept | similarity ≥ 0.38 | on-topic best passage 0.42–0.85 |
+| understood, tagged with none (off the graph) | similarity ≥ 0.62 (near-paraphrase only) | off-topic best 0.41–0.56 |
+| not understood (timed out) | ≥ 0.45 | |
+
+`bundle.relevance` records the floor and how many passages were dropped. A turn
+left with no material is flagged `no-material` and shown as *General
+explanation*. Recall@5 on the retrieval set is unchanged (100%).
+
 ### 5 — Inject the learner, compactly
 
 Roughly 300 tokens of **hand-formatted prose**, not a JSON dump. Models read
 prose far better, and the token cost is lower.
+
+**Only what this question touches.** Mastery lines come from the question's
+concepts and the *gated* passages' concepts; misconceptions only for those
+concepts. Unrelated passages used to pull their concepts' mastery in, and any
+four unresolved misconceptions rode along whatever the topic — together they
+steered a biology answer toward trigonometry.
 
 The profile half comes from onboarding ([10-onboarding.md](10-onboarding.md)),
 the mastery half from the learner plane. Stage is written with its **local label**
@@ -146,6 +202,10 @@ RECENT
 **This block is the entire difference between Grasp's tutor and ChatGPT.** Only
 concepts detected in step 1 appear — never the whole mastery table.
 
+*Today the ACTIVE MISCONCEPTIONS and RECENT sections never render:* the card
+supports them, but nothing writes `misconceptions` or `episodes` yet (planned —
+[03-data-model.md](03-data-model.md#learner-plane)).
+
 Rules:
 - **Local labels, not internal ones.** `Class 10 (India)`, never `stage: 10`.
 - **Notation is stated explicitly**, from the curriculum's `notation` profile. A
@@ -172,7 +232,8 @@ After generation:
 - Every cited id must exist in the bundle. Unknown id ⇒ flag `fabricated-citation`.
 - A response making factual claims with zero citations ⇒ flag `ungrounded`.
 
-Both flags land on the trace and on the message. **The rate of these two flags is
+Both flags land on the message (`messages.flags`, alongside `budget-shed`) and in
+the SSE `cite` event; putting them on the trace is planned. **The rate of these two flags is
 your hallucination metric**, it costs nothing, and it is the only reason you'll
 know whether retrieval is actually working.
 
@@ -198,10 +259,24 @@ type ContextBundle = {
 };
 ```
 
+This is the target shape. The built `ContextBundle` (`context/assemble.ts`) has
+no `surface`, `system` or `attachments` yet — the system prompt lives in the
+`tutor.reply` template — and adds `needsClarification`, `digest?`, `timings`,
+and `retrievalLegs` (`atlas` \| `fallback` \| `skipped` per leg).
+
 `budget.shed` being non-empty is not an error — it's the signal that a budget
 profile needs tuning.
 
 ## Attachment handling
+
+> **Interim path built (2026-11-09)** — no R2 or Inngest yet. Each file is read
+> once at upload into a transcript (`attachment.read@1`); a turn carries the
+> message with each transcript under an `[Attached …]` line (`composeTurn`,
+> 12,000 characters across the turn), and the file itself to providers that can
+> open it. Understanding and retrieval get the message plus the start of each
+> transcript (`queryForRetrieval`), so "solve this" with a photo retrieves the
+> right chapter. Earlier turns resend 800 characters of each transcript, never
+> the bytes. The pipeline below is still the target.
 
 Uploads run through the same pipeline regardless of scope:
 
@@ -236,11 +311,12 @@ The broker is mostly pure functions around two I/O calls, so it tests well:
 
 | What | How |
 | --- | --- |
-| Budget allocator | Unit. Property test: never exceeds total; sheds in priority order. |
-| History compaction | Unit with fixture sessions of 2 / 10 / 60 turns. |
-| RRF fusion | Unit with known rank lists. |
-| Scope filter | Integration — a user must never retrieve another user's chunks. **Security test, not a quality test.** |
-| End to end | Golden set of 20 real student questions; assert retrieval hits the right chunk in top-5 (recall@5). |
+| Budget allocator | Unit (`budget.test.ts`). Property test: never exceeds total; sheds in priority order. |
+| History compaction | Unit with fixture sessions of 2 / 10 / 60 turns. *Planned.* |
+| RRF fusion | Unit with known rank lists (`fuse.test.ts`). |
+| Learner card | Unit (`learner-card.test.ts`). |
+| Scope filter | Integration — a user must never retrieve another user's chunks. **Security test, not a quality test.** *Planned.* |
+| End to end | Golden set of 20 real student questions; assert retrieval hits the right chunk in top-5 (recall@5). `pnpm retrieval:eval` — 20/20 today. |
 
 `recall@5` on that golden set is the number to watch when tuning retrieval. Move
 it before touching prompts — retrieval quality dominates prompt quality here.

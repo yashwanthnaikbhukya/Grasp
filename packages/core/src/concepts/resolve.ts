@@ -106,6 +106,42 @@ export function cosine(a: readonly number[], b: readonly number[]): number {
   return dot / Math.sqrt(na * nb);
 }
 
+/**
+ * Map concept ids a model *mentioned* onto ids that *exist* (rule 13).
+ *
+ * `query.understand` and `card.generate` are shown the graph and asked to tag
+ * with its ids, but a model drifts — `sin-cos-identity` for `sin-cos-identities`,
+ * a concept's name instead of its id, or something invented. A raw tag that
+ * matches no node accumulates mastery on nothing and lands permanently in the
+ * append-only event log. Exact id first, then an alias or name, then the slug of
+ * what it wrote; anything unmatched is dropped, never created (creating is
+ * `resolveOrCreate`'s job, with embeddings and review).
+ *
+ * Order-preserving and de-duplicated. Pure.
+ */
+export function knownConceptIds(
+  mentioned: readonly string[],
+  graph: readonly { _id: string; name: string; aliases: readonly string[] }[],
+): string[] {
+  const ids = new Set(graph.map((c) => c._id));
+  const byAlias = new Map<string, string>();
+  for (const c of graph) {
+    byAlias.set(normalizeAlias(c.name), c._id);
+    for (const a of c.aliases) byAlias.set(normalizeAlias(a), c._id);
+  }
+
+  const out: string[] = [];
+  for (const raw of mentioned) {
+    const m = raw.trim();
+    if (!m) continue;
+    const hit = ids.has(m)
+      ? m
+      : (byAlias.get(normalizeAlias(m)) ?? (ids.has(slugify(m)) ? slugify(m) : undefined));
+    if (hit && !out.includes(hit)) out.push(hit);
+  }
+  return out;
+}
+
 /** Concept ids are readable slugs on purpose — they appear in traces and prompts. */
 export function slugify(name: string): string {
   const base = name
@@ -274,7 +310,7 @@ export async function resolveOrCreate(args: {
    * not an error to propagate. Throwing here would fail a whole ingestion batch
    * because one passage hit a rate limit.
    */
-  let proposal;
+  let proposal: Awaited<ReturnType<typeof generate<ConceptProposal>>>;
   try {
     proposal = await generate<ConceptProposal>({
       task: 'concept.propose',

@@ -19,11 +19,14 @@ Three jobs, in priority order:
 
 ## Design constraints
 
-- **Under 90 seconds, five screens.** Every extra screen loses people, and a
+- **Under 90 seconds, four screens.** Every extra screen loses people, and a
   learner who abandons onboarding has no profile at all — which is worse than a
-  partial one.
-- **Progressive.** Screens 1–3 are enough to start. Screens 4–5 can be deferred
-  into the first session and asked in context. Nothing blocks on completeness.
+  partial one. *Built today:* region → age + stage → curricula + subjects → goal,
+  minutes/day and language (journey steps 4 and 5 below share the last screen),
+  each saving as it goes. The depth default (step 5) isn't asked yet.
+- **Progressive.** Screens 1–3 are enough to start; the goal and language
+  questions can be deferred into the first session and asked in context. Nothing
+  blocks on completeness.
 - **Every field has a sane default and an escape hatch.** "Not listed",
   "self-study", "prefer not to say" are always available and always work.
 - **Self-report is a prior, not a measurement.** What a learner says their level
@@ -36,10 +39,15 @@ Three jobs, in priority order:
 
 Email magic link (Resend). No password. Ask nothing else here.
 
+*Today: email + password via Better Auth, no email verification.* Magic links
+and verification are planned and wait on Resend ([07-phases.md](07-phases.md)).
+
 ### 1 — Where are you?
 
 Country, geo-guessed from request headers and **editable** — a guess presented as
-a confirmation performs far better than an empty dropdown.
+a confirmation performs far better than an empty dropdown. *Today: thirty
+one-tap countries plus every other country in a list (names from the server, so
+both renders agree), and "Prefer not to say". The geo-guess is planned.*
 
 | Sets | Used for |
 | --- | --- |
@@ -61,7 +69,10 @@ Two inputs:
   school, a 19-year-old repeating an exam, and a 40-year-old relearning algebra.
 - **Stage** — a picker showing **local labels for their region** (`Class 10`,
   `Year 11`, `Grade 10`, `MYP 5`), storing the normalized integer
-  ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)).
+  ([ADR 0006](adr/0006-curriculum-agnostic-concepts.md)). Two groups: *School*
+  and *College & university* — year 1 to 4 of a first degree, *Master's*,
+  *Doctorate* ([ADR 0008](adr/0008-programmes-subjects-tertiary-stages.md)),
+  with university first for learners 18 and over.
 
 Plus a branch: **"Not in formal education"** → skip stage, infer a band from age
 and self-rated level, and treat every concept as in-scope.
@@ -72,10 +83,18 @@ and self-rated level, and treat every concept as in-scope.
 
 ### 3 — What are you studying?
 
-Curriculum candidates filtered by `region` + `stage`, with search, multi-select,
-and **"Other / self-study"** always present and always functional.
+**Programmes** (`curriculumCandidates`) for their region and the international
+ones, fitting their stage, grouped and ordered by what a learner at that stage
+picks first: *School boards & curricula*, *Entrance & admission exams*, *College
+& university*, *Professional qualifications*, *Competitions & olympiads*. Search
+across all of them; multi-select; **"Not listed / studying on my own"** always
+present. 100 programmes in 40 regions today (`data/curricula.seed.json`).
 
-Then subjects, from the union of subjects the chosen curricula cover.
+Then **subjects** — chosen from the whole catalogue (`subjects.ts`, ~100 in 12
+groups), not limited to the programmes': the programmes' subjects are suggested
+first, a search finds any subject, *Browse all subjects* lists them by group,
+and anything missing can be typed in. Up to 12. A programme picked under another
+country or stage drops out when that changes.
 
 A learner with no matching curriculum is a first-class case, not an error state:
 they get the universal concept graph with no `inScope` filtering, which is a
@@ -85,10 +104,11 @@ slightly broader experience rather than a broken one.
 
 | Goal | What it changes |
 | --- | --- |
-| Exam on a date | Review urgency, study plan backwards from the date |
-| School coursework | Follows the curriculum's `sequenceIndex` order |
+| Exam on a date | Review urgency, study plan backwards from the date. The exam names of the chosen programmes are offered as one-tap labels |
+| Coursework (school, or "my course" at university) | Follows the curriculum's `sequenceIndex` order |
 | Self-study | Follows prerequisite order, no external deadline |
 | Competition | Higher difficulty band, less exam-format drilling |
+| Career | Skills for work or a professional qualification |
 
 Plus minutes available per day → the study plan's budget.
 
@@ -111,6 +131,9 @@ topological depth, seeded by the self-reported stage.
 Skipping is fine — the profile prior carries the first few sessions, and real
 attempts overtake it quickly.
 
+*Planned — not built yet:* `placementNext` exists and is unit-tested, but no
+placement flow is offered.
+
 ## What lands on the learner
 
 ```ts
@@ -132,21 +155,22 @@ user.profile = {
 ```
 
 Every field is optional with a documented default. `profileCompleteness` is
-computed, and the UI nudges toward the gaps that would most improve the
-experience — never a blocking modal.
+computed (and tested), and the UI nudges toward the gaps that would most improve
+the experience — never a blocking modal. *The nudge is planned; nothing shows it
+yet.*
 
 ## How the profile is actually used
 
 | Field | Effect |
 | --- | --- |
-| `curriculumIds` | Retrieval scope filter; `inScope` gating of concepts |
+| `curriculumIds` | Retrieval scope filter; `inScope` gating of concepts *(gating planned — mappings aren't read yet)* |
 | `stage` | Advisory difficulty band; keeps calculus away from a 12-year-old |
-| `age` | Consent regime, safety posture, tone |
+| `age` | Consent regime, safety posture, tone *(consent gating planned)* |
 | `language` + `codeSwitch` | Tutor output language; **retrieval stays in the corpus language** |
 | `notation` (from region) | Symbol and terminology conventions in generated content |
-| `goal` + `examDate` | Review urgency, study-plan direction |
-| `depth` | Default response length |
-| `selfRated` | Cold-start mastery prior, decayed as real attempts arrive |
+| `goal` + `examDate` | Stated in the learner card today; review urgency and study-plan direction planned |
+| `depth` | Default response length *(planned — not asked yet)* |
+| `selfRated` | Cold-start mastery prior, decayed as real attempts arrive *(planned — not read yet)* |
 
 All of it reaches the model through the learner card
 ([05-context-broker.md](05-context-broker.md#5--inject-the-learner-compactly)) —
@@ -189,8 +213,10 @@ The strictest applicable rule wins. Practically:
 - **Off-topic and unsafe input handling.** A learner surface will receive
   personal disclosures, distress, and abuse. Route those to a safety path with
   regional helpline signposting; never let the tutor improvise. Out of scope for
-  the POC, but the routing hook belongs in the broker's `intent` classification
-  from the start, which is why `meta` and `chitchat` are already intents.
+  the POC, but the routing hook belongs in the broker's `intent` classification.
+  *Planned — not built yet:* the `Intent` enum is `explain | solve | quiz | meta |
+  chitchat`, with no safety class; such messages currently reach the tutor like
+  any other.
 
 **None of this is required for the POC** — it runs on synthetic learners. All of
 it is required before one real student signs up, which is why it's written down
@@ -201,11 +227,11 @@ now rather than discovered later. The checklist lives at the end of
 
 | What | How |
 | --- | --- |
-| Stage ladder | Unit. Round-trip `stage → label → stage` for every supported region. |
-| Curriculum candidates | Unit. Every (region, stage) pair returns at least one option, always including a self-study fallback. |
-| Consent gating | Integration. An under-threshold account with no recorded consent can create nothing beyond itself. |
-| Learner card | Snapshot, across a matrix of profiles: full, minimal, self-study, adult learner, code-switching. |
-| Retrieval isolation | Integration. Curriculum scoping never leaks another learner's `user`-scoped chunks. **Security test.** |
+| Stage ladder | Unit (`stage.test.ts`). Round-trip `stage → label → stage` for every supported region. |
+| Curriculum candidates | Unit. Every (region, stage) pair returns at least one option, always including a self-study fallback. *Planned.* |
+| Consent gating | Integration. An under-threshold account with no recorded consent can create nothing beyond itself. *Planned — consent gating isn't built.* |
+| Learner card | Snapshot, across a matrix of profiles: full, minimal, self-study, adult learner, code-switching. *Planned — `learner-card.test.ts` has unit tests, not the snapshot matrix.* |
+| Retrieval isolation | Integration. Curriculum scoping never leaks another learner's `user`-scoped chunks. **Security test.** *Planned.* |
 
 The minimal-profile snapshot matters most: the learner card must degrade to
 something useful when four of the eight fields are missing, because for real

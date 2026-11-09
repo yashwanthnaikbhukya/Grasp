@@ -11,9 +11,11 @@
 import { isPlaceholder } from './load-env';
 import { readFile } from 'node:fs/promises';
 import {
+  CURRICULUM_KIND_NAME,
   CurriculumSeedSchema,
   SELF_STUDY_CURRICULUM_ID,
   stageLabel,
+  subjectInfo,
   supportedRegions,
 } from '@grasp/schema';
 import { closeMongo, collections, env } from '@grasp/core';
@@ -53,6 +55,16 @@ if (badMappings.length > 0) {
   process.exit(1);
 }
 
+// A subject id outside the catalogue would show as raw text at onboarding.
+const unknownSubjects = seed.curricula.flatMap((c) =>
+  c.subjects.filter((s) => !subjectInfo(s)).map((s) => `${c._id} → ${s}`),
+);
+if (unknownSubjects.length > 0) {
+  console.error(`${RED}Subjects not in packages/schema/src/subjects.ts:${OFF}`);
+  for (const u of unknownSubjects) console.error(`  ${u}`);
+  process.exit(1);
+}
+
 // A curriculum nobody can reach from onboarding is almost always a typo'd region.
 const known = new Set(supportedRegions());
 for (const c of seed.curricula) {
@@ -67,8 +79,10 @@ for (const c of seed.curricula) {
 
 // ---- Write ---------------------------------------------------------------
 
+// Replace, not $set: a row is exactly what the seed says. ($set left the old
+// single `subject` field behind when programmes moved to `subjects[]`.)
 const curriculumOps = seed.curricula.map((c) => ({
-  updateOne: { filter: { _id: c._id }, update: { $set: c }, upsert: true },
+  replaceOne: { filter: { _id: c._id }, replacement: c, upsert: true },
 }));
 const cRes = await collections.curricula().bulkWrite(curriculumOps as never);
 
@@ -95,6 +109,10 @@ if (seed.mappings.length > 0) {
 console.log(`\n${GREEN}✓${OFF} ${BOLD}${seed.curricula.length} curricula${OFF} loaded`);
 console.log(`  ${DIM}upserted ${cRes.upsertedCount} · modified ${cRes.modifiedCount}${OFF}`);
 
+for (const [kind, label] of Object.entries(CURRICULUM_KIND_NAME)) {
+  const n = seed.curricula.filter((c) => c.kind === kind).length;
+  if (n > 0) console.log(`  ${DIM}${String(n).padStart(3)} · ${label}${OFF}`);
+}
 const international = seed.curricula.filter((c) => c.regions.includes('*')).length;
 const regions = new Set(seed.curricula.flatMap((c) => c.regions).filter((r) => r !== '*'));
 console.log(

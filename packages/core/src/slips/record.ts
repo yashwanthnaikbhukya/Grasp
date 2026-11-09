@@ -2,7 +2,7 @@ import type { RootCause, SlipClassification } from '@grasp/schema';
 import { collections } from '../db/collections';
 import { generate } from '../llm/gateway';
 import { loadGraph } from '../concepts/resolve';
-import { currentP } from '../learner/mastery';
+import { currentP, masteryFromDoc } from '../learner/mastery';
 import { reconcile, signalPrior, type Prior, type SlipSignals } from './classify';
 
 /**
@@ -51,20 +51,7 @@ export async function recordSlip(args: RecordSlipArgs): Promise<Prior | null> {
     const m = byConcept.get(id);
     if (!m) return { p: 0, attempts: 0 };
     return {
-      p: currentP(
-        {
-          p: Number(m.p ?? 0),
-          attempts: Number(m.attempts ?? 0),
-          correct: Number(m.correct ?? 0),
-          elo: Number(m.elo ?? 1200),
-          stability: Number(m.stability ?? 1),
-          difficulty: Number(m.difficulty ?? 0),
-          lastSeenAt: (m.lastSeenAt as Date | null) ?? null,
-          nextDueAt: (m.nextDueAt as Date) ?? now,
-          state: 'learning',
-        },
-        now,
-      ),
+      p: currentP(masteryFromDoc(m, now), now),
       attempts: Number(m.attempts ?? 0),
     };
   };

@@ -1,6 +1,7 @@
 export {
   resolveExisting,
   resolveOrCreate,
+  knownConceptIds,
   loadGraph,
   invalidateGraphCache,
   cosine,

@@ -72,7 +72,11 @@ async function collect(): Promise<Check[]> {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       const auth = /auth|password|credential/i.test(msg);
-      const net = /ENOTFOUND|timed out|ETIMEDOUT|whitelist|not allowed/i.test(msg);
+      // A DNS miss means the cluster hostname does not exist (paused cluster
+      // still resuming, deleted cluster, or a typo) — the IP allowlist cannot
+      // cause it, so pointing at Network Access sends you the wrong way.
+      const dns = /ENOTFOUND|querySrv|EAI_AGAIN/i.test(msg);
+      const net = /timed out|ETIMEDOUT|whitelist|not allowed/i.test(msg);
       checks.push({
         phase: 0,
         name: 'MongoDB Atlas',
@@ -80,9 +84,11 @@ async function collect(): Promise<Check[]> {
         detail: msg.split('\n')[0] ?? msg,
         fix: auth
           ? 'Password wrong, or has URI-unsafe characters — regenerate an alphanumeric one'
-          : net
-            ? 'Add your IP under Atlas → Network Access (0.0.0.0/0 for local dev)'
-            : 'docs/08-setup.md § 2',
+          : dns
+            ? 'Cluster hostname does not resolve — is the cluster paused or deleted? Resume it in Atlas (DNS takes a minute) or copy a fresh connection string'
+            : net
+              ? 'Add your IP under Atlas → Network Access (0.0.0.0/0 for local dev)'
+              : 'docs/08-setup.md § 2',
       });
     }
   }

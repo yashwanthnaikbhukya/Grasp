@@ -2,7 +2,18 @@ import { configuredProviders, env, ollamaStatus, pingMongo } from '@grasp/core';
 
 export const dynamic = 'force-dynamic';
 
-/** Liveness + dependency check. Safe to expose — reports presence, never values. */
+/**
+ * Liveness + dependency check. Safe to expose — reports presence, never values.
+ * Raw driver/provider error text (hostnames, cluster names) is shown only in
+ * development; production says *what* is down, logs *why*.
+ */
+const detail = (e: unknown): string => {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (process.env.NODE_ENV !== 'production') return msg;
+  console.error('[health]', msg);
+  return 'unreachable';
+};
+
 export async function GET() {
   const providers = configuredProviders();
 
@@ -12,7 +23,7 @@ export async function GET() {
         (e: unknown) => ({
           configured: true,
           ok: false as const,
-          error: e instanceof Error ? e.message : String(e),
+          error: detail(e),
         }),
       )
     : { configured: false, ok: false as const, error: 'MONGODB_URI not set' };
@@ -37,7 +48,7 @@ export async function GET() {
         embedModel: env.ollama.embedModel,
         embedModelPresent,
         embedDim: env.ollama.embedDim,
-        error: ollama.error,
+        error: ollama.error ? detail(ollama.error) : undefined,
       },
       tracing: env.langfuse.secretKey ? 'langfuse' : 'stdout',
     },
