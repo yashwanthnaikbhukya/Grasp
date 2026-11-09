@@ -7,20 +7,20 @@ The rule that makes this plan work: **nothing from phase *n+1* starts until phas
 gate. Scope creep is the most common way a project like this dies, and the gates
 are the only mechanism that stops it.
 
-## Where things stand — 2026-11-08
+## Where things stand — 2026-11-09
 
 **The rule above was broken, and the plan now says so.** Building ran ahead of
-the gates: Ask, Reps, Slips and Map all work end to end, but only Gate 0 has
+the gates: Ask, Reps, Slips and Map all work end to end, but only Gate 0 had
 passed. Racing ahead was not wasted — it surfaced real bugs no gate would have
-— but it also means the event log, the retrieval filter and the learner-facing
-shell were never hardened. Phase H closes that debt before anything new.
+— but it also meant the event log, the retrieval filter and the learner-facing
+shell were never hardened. Phase H closed that debt before anything new.
 
 **Order from here** — each step unblocks the next:
 
-1. **Phase H — Hardening** *(nearly closed — 3 of 4 gate checks pass; CI needs a
-   GitHub remote)*. Event-log integrity first: `events` is append-only, so every
-   day of traffic writes evidence that can never be corrected later.
-2. **0.4 Eval harness** *(built — `pnpm eval`, 65 cases across 6 tasks, baseline
+1. **Phase H — Hardening ☑** *(Gate H passed 2026-11-09)*. The last check was CI:
+   the repo is on GitHub (`yashwanthnaikbhukya/Grasp`) and the first run is
+   green. Event-log integrity came first because `events` is append-only.
+2. **0.4 Eval harness — next** *(built — `pnpm eval`, 65 cases across 6 tasks, baseline
    recorded, CI-gated; two golden sets left)*. No prompt version bump until its
    task has ≥10 golden cases — `--compare` enforces it. Next prompt work, by the
    baseline: `slip.classify` (6/11), then Coach (7/10).
@@ -89,8 +89,8 @@ empty graph is a valid starting state — the first ingestion run populates it.
 ### 0.3 Infrastructure ◐
 
 - ☑ Monorepo (pnpm workspaces + turbo), TS config
-- ☐ **Lint** — `turbo run lint` resolves to nothing in every package; there is
-      no ESLint/Biome config, so `pnpm check` only typechecks (moved to Phase H)
+- ☑ **Lint** — Biome (`pnpm lint`) and the boundary check, part of `pnpm check`
+      since Phase H.5
 - ☑ `packages/schema` — Zod schemas
 - ☑ `packages/core/db` — client, typed collections, index definitions
 - ☑ `packages/core/llm` — gateway, registry, providers, failover, tracing
@@ -169,7 +169,7 @@ one trace id. Phase 0 is not *closed* until 0.4 (the eval harness) exists.
 
 ---
 
-## Phase H — Hardening ◐ — nearly closed
+## Phase H — Hardening ☑ — Gate H passed 2026-11-09
 
 *Inserted 2026-11-08, after a full review (docs vs code, the hard rules, and a
 walk-through as a new learner). Everything here was **verified in the code or
@@ -351,21 +351,23 @@ Full write-up: [test-reports/2026-11-09.md](test-reports/2026-11-09.md).
 
 ### H.5 Engineering hygiene
 
-- ☑ **Biome** (`pnpm lint`, recommended rules, lint only): 0 errors; 40 warnings
+- ☑ **Biome** (`pnpm lint`, recommended rules, lint only): 0 errors; 44 warnings
       left visible (mostly non-null assertions in older code). Every suppression
       carries its reason
 - ☑ **`pnpm lint:boundaries`** — provider hosts/SDKs only in `core/llm` (rule 1),
       no package imports the app, no `grade` field (rule 10). Proven to fail on a
       planted violation
 - ☑ **CI** — `.github/workflows/ci.yml`: frozen install, typecheck, both lints,
-      unit tests on every PR and push to `main`. Runs once the repo has a GitHub
-      remote (there is none yet); the same sequence passes locally
+      unit tests on every PR and push to `main`. Runs on GitHub
+      (`yashwanthnaikbhukya/Grasp`, public) since 2026-11-09 — first run green in
+      33 s. The `eval` job skips until `GEMINI_API_KEY` / `GROQ_API_KEY` are
+      added as repository secrets
 - ☐ `pnpm eval --compare=main` in CI (after 0.4)
 - ☐ Tests for `verifyCitations`
 - ☐ Move the feed's candidate selection and the map's depth/blocker logic out of
       `apps/web` into core (the last business logic in a surface)
 
-### Gate H ◐ — 3 of 4
+### Gate H ☑ — passed 2026-11-09
 
 > A duplicate attempt POST changes nothing; mastery for a test learner is rebuilt
 > from `events` alone and matches what is stored; with 1,000 foreign-user chunks
@@ -378,7 +380,8 @@ Full write-up: [test-reports/2026-11-09.md](test-reports/2026-11-09.md).
       came from persisted events (`pnpm learner:rebuild`); the one drifted test
       account predates the fix
 - ☑ 1,000 foreign-user chunks, own results unchanged (`pnpm retrieval:isolation`)
-- ◐ CI: workflow written and green locally; needs a GitHub remote to run on PRs
+- ☑ CI runs lint + typecheck + tests on every push and PR — first GitHub run
+      green on 2026-11-09 (`check` job, 33 s)
 
 ---
 
@@ -457,9 +460,9 @@ redirects to `/login?next=/app`. A learner stored as `stage: 10` with
 - ◐ Rerank — lexical-overlap rerank (20% weight) today; the local cross-encoder,
       top-20 → top-5, is still ☐
 - ☑ Profile-driven scope filter; curriculum-neutral content stays eligible
-- ☐ **Security test on `scopeFilter` itself** — `ScopedCollection` is tested,
-      but the filter inside `$search` / `$vectorSearch` is not: a user must not
-      retrieve another user's chunks
+- ☑ **Security test on `scopeFilter` itself** — the filter runs inside
+      `$search` / `$vectorSearch`, with unit tests and `pnpm retrieval:isolation`
+      (H.2): a user never retrieves another user's chunks
 - ☐ Rank-1 hit rate above 55% (it is the number a learner actually feels)
 
 ### 1.3 Context broker v1 ☑
@@ -512,8 +515,9 @@ lives.
       drawn with Mafs, expressions compiled by mathjs (never `eval`)
 - ◐ Thinking state from the real phases — built; elapsed time after 3 s and
       *Try again* at 30 s still to do
-- ☐ Session list as a drawer under 768 px; no empty "New chat" rows left behind
-      by a failed turn
+- ☑ Session list as a drawer on narrow screens — the whole sidebar is one under
+      900 px (1.8)
+- ☐ No empty "New chat" rows left behind by a failed turn
 - ☐ History follows the active path from `activeLeafId`; fixture test at 60 turns
 
 ### 1.5 Attachments ◐ — interim path built (2026-11-09)
@@ -651,7 +655,8 @@ generator breaking its own rules.
 - ☑ Latency as signal — fast+wrong discounted as a guess
 - ☑ Brier scoring against a constant baseline
 - ☐ Weekly calibration job
-- ☐ `pnpm learner:rebuild` with shadow-write + diff report
+- ◐ `pnpm learner:rebuild` — shadow replay + diff report ☑ (H.1); `--write`
+      waits until the report is trusted
 
 ### 2.3 Feed ◐ — **usable**
 
@@ -733,8 +738,13 @@ synchronized replay, not a game server.
 - ☑ Node actions: practise / ask about it / see prerequisites
 - ☑ Rendered with **React Flow** (`@xyflow/react`) over the same deterministic
       core layout: pan/zoom, fit-to-view (nothing clipped), arrowheads for
-      prerequisite → dependent, full names in sentence case on two lines, state
-      in text as well as colour, keyboard focus and selection
+      prerequisite → dependent, full names on two lines in one node size
+      (`conceptLabel`: sentence case, `sin^2` shown as `sin²`), state in text as
+      well as colour, keyboard focus and selection
+- ☑ Detail panel for the selected idea (2026-11-09) — beside the graph on wide
+      pages, a sheet over it on narrow ones: mastery, *Builds on* / *Leads to*,
+      *Practice this*, *Ask about it*; the view pans just enough to keep the
+      selection visible
 - ☐ "Start here" for a learner with nothing started; a list view for screen readers
 - ☐ Mindmap generation from doc, session, or concept — **typed edges**, schema-validated
 - ☐ Expand-on-demand child generation

@@ -105,11 +105,12 @@ pnpm eval             # model-quality golden sets (--task=, --compare, --update-
 
 ## Current phase
 
-**Phase H — Hardening.** Gate 0 passed on 2026-11-08. Work had run ahead of the
-gates — Ask, Reps, Slips and Map work end to end, but nothing after Gate 0 has
-passed — so the plan now closes that debt first. Order: Phase H (event-log
-integrity first) → 0.4 eval harness → Gate 1 with the experience track →
-Gate R (first real learner) → Gate 2. No new surface (Snap, Duel) before Gate 2.
+**0.4 eval harness, then Gate 1.** Gate 0 passed on 2026-11-08 and Gate H
+(hardening) on 2026-11-09. Work had run ahead of the gates — Ask, Reps, Slips
+and Map work end to end, but no gate after H has passed. Order: 0.4 eval
+harness (two golden sets left) → Gate 1 with the experience track → Gate R
+(first real learner) → Gate 2. No new surface (Snap, Duel) before Gate 2.
+The repo is public at `github.com/yashwanthnaikbhukya/Grasp`; CI runs there.
 [docs/07-phases.md](docs/07-phases.md) — "Where things stand" — is the source of
 truth.
 
